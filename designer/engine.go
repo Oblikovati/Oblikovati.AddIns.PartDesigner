@@ -12,6 +12,8 @@ import (
 
 	"oblikovati.org/api/client"
 	"oblikovati.org/api/wire"
+	"oblikovati.org/part-designer/designer/build"
+	"oblikovati.org/part-designer/designer/catalog"
 )
 
 // HostCaller is the transport the engine talks to the host through — exactly the
@@ -21,18 +23,33 @@ type HostCaller interface {
 	Call(method string, req []byte) ([]byte, error)
 }
 
-// Engine drives the host to browse and place standard parts. A1 is the scaffold: it
-// registers the ribbon button and shows the (placeholder) dockable panel; the catalogue,
-// generators, and placement service arrive in later PBIs (A2–A5).
+// Engine drives the host to browse and place standard parts: it owns the standards
+// catalogue and the generator registry, and turns a chosen family+member into a placed,
+// stamped, parametric part (see placement.go). The panel browser (A5) reads the catalogue;
+// the ribbon button + placeholder panel are the A1 scaffold.
 type Engine struct {
-	host HostCaller
-	api  *client.Client
+	host    HostCaller
+	api     *client.Client
+	catalog *catalog.Catalog
+	catErr  error // catalogue load error, surfaced by operations that need it
+	gens    *build.Registry
 }
 
-// NewEngine binds the engine to the host transport.
+// NewEngine binds the engine to the host transport, loading the embedded standards catalogue
+// and the built-in generator registry. A catalogue load failure (a malformed embedded table,
+// which the build/tests guard against) is stored and surfaced by the operations that need
+// it, so a bad table never crashes the host at Activate.
 func NewEngine(host HostCaller) *Engine {
-	return &Engine{host: host, api: client.New(host)}
+	cat, err := catalog.Load()
+	return &Engine{
+		host: host, api: client.New(host),
+		catalog: cat, catErr: err, gens: build.DefaultRegistry(),
+	}
 }
+
+// Catalog exposes the loaded standards catalogue (nil if it failed to load) for the panel
+// browser.
+func (e *Engine) Catalog() *catalog.Catalog { return e.catalog }
 
 // API exposes the underlying typed client (used by the panel + placement code).
 func (e *Engine) API() *client.Client { return e.api }
