@@ -34,5 +34,6 @@ func (Circlip) Build(b *PartBuilder, rm ResolvedMember) error {
 	if err := sk.AssertFullyConstrained(); err != nil {
 		return err
 	}
-	return b.Revolve(sk, splitGapAngle, "new")
+	_, err = b.Revolve(sk, "origin/axis/z", splitGapAngle, "new")
+	return err
 }

@@ -115,7 +115,7 @@ func TestSelectFamilyAndCategory(t *testing.T) {
 	}
 
 	// An unknown category clears the family list.
-	e.applySelection(categoryControlID, "Bearings")
+	e.applySelection(categoryControlID, "Nonexistent")
 	if e.sel.familyID != "" {
 		t.Errorf("family under empty category = %q, want none", e.sel.familyID)
 	}

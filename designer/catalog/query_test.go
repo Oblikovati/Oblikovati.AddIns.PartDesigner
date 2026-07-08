@@ -63,9 +63,9 @@ func TestByCategoryPrefix(t *testing.T) {
 	if !containsID(keys, "din6885-parallel-key") {
 		t.Errorf("Shaft Parts/Keys = %v, want the DIN 6885 parallel key", ids(keys))
 	}
-	none := c.ByCategory(CategoryPath{"Bearings"})
-	if len(none) != 0 {
-		t.Errorf("Bearings subtree = %v, want empty", ids(none))
+	bearings := c.ByCategory(CategoryPath{"Bearings"})
+	if !containsID(bearings, "iso15-deep-groove-ball-bearing") {
+		t.Errorf("Bearings subtree = %v, want the ISO 15 deep-groove ball bearing", ids(bearings))
 	}
 	structural := c.ByCategory(CategoryPath{"Structural"})
 	if !containsID(structural, "iso1035-round-bar") || !containsID(structural, "en10058-flat-bar") {

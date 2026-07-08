@@ -88,6 +88,7 @@ func DefaultRegistry() *Registry {
 	mustRegister(r, HexNut{})
 	mustRegister(r, Washer{})
 	mustRegister(r, Stud{})
+	mustRegister(r, BallBearing{})
 	return r
 }
 

@@ -11,6 +11,7 @@
 package build
 
 import (
+	"encoding/json"
 	"fmt"
 	"strconv"
 
@@ -98,6 +99,22 @@ func (b *PartBuilder) paramExpr(t catalog.ColumnType, v float64) string {
 	}
 }
 
+// DeriveParam upserts a formula parameter — one whose expression is derived from the member's
+// published columns rather than a raw cell (a bearing's pitch diameter, ball diameter and race
+// diameters computed from bore/outer_dia). Like PublishParams it is idempotent, so re-driving a
+// Change-Size recomputes rather than duplicating. The derived parameter shows in the part's list,
+// keeping the whole part parametric: editing bore re-drives the balls' pitch circle.
+func (b *PartBuilder) DeriveParam(name, expr string) error {
+	existing, err := b.existingParams()
+	if err != nil {
+		return err
+	}
+	if err := b.upsertParam(existing, name, expr); err != nil {
+		return fmt.Errorf("derive param %q = %q: %w", name, expr, err)
+	}
+	return nil
+}
+
 // Sketch creates a 2D sketch on the named plane ("XY"/"XZ"/"YZ") and returns a handle for
 // adding constrained, parameter-driven geometry.
 func (b *PartBuilder) Sketch(plane string) (*SketchContext, error) {
@@ -165,19 +182,44 @@ func (b *PartBuilder) Loft(bottom, top *SketchContext, operation string) error {
 	return nil
 }
 
-// Revolve sweeps the sketch's first profile about the world Z axis by angleExpr (a parameter name
-// or formula; an angle just under a full turn leaves the split gap of a retaining ring). It is how
-// a turned/rotationally-symmetric part is built — a flat split ring here, and the bearing races
-// later — from a cross-section revolved about the axis, so the part re-drives with its parameters.
-func (b *PartBuilder) Revolve(sk *SketchContext, angleExpr, operation string) error {
-	_, err := client.AddFeature(b.api.Features(), featureargs.Revolve{
-		SketchIndex: sk.index, ProfileIndex: 0, AxisRef: "origin/axis/z",
+// Revolve sweeps the sketch's first profile about axisRef ("origin/axis/z" for a ring, or
+// "origin/axis/x" to turn an off-axis half-disk into a ball) by angleExpr — a parameter name or
+// formula; an angle just under a full turn leaves the split gap of a retaining ring. It returns the
+// created feature's name so it can be patterned (the bearing's ball). It is how a
+// turned/rotationally-symmetric part is built from a cross-section, so the part re-drives with its
+// parameters.
+func (b *PartBuilder) Revolve(sk *SketchContext, axisRef, angleExpr, operation string) (string, error) {
+	res, err := client.AddFeature(b.api.Features(), featureargs.Revolve{
+		SketchIndex: sk.index, ProfileIndex: 0, AxisRef: axisRef,
 		Angle: angleExpr, Operation: operation,
 	})
 	if err != nil {
-		return fmt.Errorf("revolve sketch %d by %q (%s): %w", sk.index, angleExpr, operation, err)
+		return "", fmt.Errorf("revolve sketch %d about %s by %q (%s): %w", sk.index, axisRef, angleExpr, operation, err)
+	}
+	return featureName(res), nil
+}
+
+// PatternCircular replicates the named source feature countExpr times evenly around the world Z
+// axis — how a bearing's single ball is arrayed into its full ball complement.
+func (b *PartBuilder) PatternCircular(sourceFeature, countExpr string) error {
+	_, err := b.api.Features().PatternCircular(wire.CircularPatternFeatureArgs{
+		SourceFeatures: []string{sourceFeature}, CountExpr: countExpr,
+		Angle: "360 deg", AxisPoint: []float64{0, 0, 0}, AxisDir: []float64{0, 0, 1},
+	})
+	if err != nil {
+		return fmt.Errorf("circular-pattern %q x%q: %w", sourceFeature, countExpr, err)
 	}
 	return nil
+}
+
+// featureName reads the created feature's tree name from a features.add reply (the "feature"
+// field), so a follow-up pattern can reference it.
+func featureName(res json.RawMessage) string {
+	var out struct {
+		Feature string `json:"feature"`
+	}
+	_ = json.Unmarshal(res, &out)
+	return out.Feature
 }
 
 // Coil sweeps the sketch's first profile along a helix about the world Z axis — how a helical
