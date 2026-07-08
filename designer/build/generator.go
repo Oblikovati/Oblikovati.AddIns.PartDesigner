@@ -74,6 +74,7 @@ func DefaultRegistry() *Registry {
 	r := NewRegistry()
 	mustRegister(r, RoundBar{})
 	mustRegister(r, HexBolt{})
+	mustRegister(r, SocketScrew{})
 	return r
 }
 

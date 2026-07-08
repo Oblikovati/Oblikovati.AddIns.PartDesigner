@@ -1,0 +1,25 @@
+{
+  "id": "iso10642-socket-screw",
+  "category": "Fasteners/Bolts/Countersunk",
+  "standard": "ISO 10642",
+  "generator": "socket_screw",
+  "variant": "countersunk",
+  "units": "mm",
+  "keyColumns": ["d", "l"],
+  "columns": [
+    { "name": "d", "param": "nominal_dia", "type": "length" },
+    { "name": "P", "param": "thread_pitch", "type": "length" },
+    { "name": "dk", "param": "head_dia", "type": "length" },
+    { "name": "k", "param": "head_height", "type": "length" },
+    { "name": "s", "param": "socket_across_flats", "type": "length" },
+    { "name": "t", "param": "socket_depth", "type": "length" },
+    { "name": "l", "param": "length", "type": "length" },
+    { "name": "b", "param": "thread_length", "type": "length" }
+  ],
+  "members": [
+    { "d": 6, "P": 1.0, "dk": 12.6, "k": 3.3, "s": 4.0, "t": 2.0, "l": 30, "b": 30 },
+    { "d": 8, "P": 1.25, "dk": 17.3, "k": 4.4, "s": 5.0, "t": 2.6, "l": 40, "b": 40 },
+    { "d": 10, "P": 1.5, "dk": 20.0, "k": 5.5, "s": 6.0, "t": 3.0, "l": 50, "b": 50 },
+    { "d": 12, "P": 1.75, "dk": 24.0, "k": 6.5, "s": 8.0, "t": 3.5, "l": 60, "b": 60 }
+  ]
+}

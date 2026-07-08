@@ -37,9 +37,9 @@ func TestPanelShowsCascadingBrowser(t *testing.T) {
 	if !ok || !contains(fam.Options, "ISO 4017 Hex Head") || !contains(fam.Options, "DIN 934 Hex") {
 		t.Errorf("family options = %v, want both seed families' labels", fam.Options)
 	}
-	// Default selection is the first family (id-sorted: din933-hex-bolt) and its first size.
-	if fam.Value != "DIN 933 Hex Head" {
-		t.Errorf("default family = %q, want DIN 933 Hex Head", fam.Value)
+	// Default selection is the first family (id-sorted: din912-socket-screw) and its first size.
+	if fam.Value != "DIN 912 Socket Head" {
+		t.Errorf("default family = %q, want DIN 912 Socket Head", fam.Value)
 	}
 	size, _ := controlByID(controls, sizeControlID)
 	if size.Value == "" || len(size.Options) == 0 {
@@ -81,9 +81,10 @@ func TestSelectionCascade(t *testing.T) {
 func TestSelectFamilyAndCategory(t *testing.T) {
 	e := NewEngine(newFakeHost())
 
-	// Filtering by the top-level category keeps the fastener families (two hex bolts + a nut).
+	// Filtering by the top-level category keeps the fastener families (hex bolts, hex nut, and
+	// the socket-head + countersunk socket screws).
 	e.applySelection(categoryControlID, "Fasteners")
-	if e.sel.category != "Fasteners" || len(e.familyOptions(e.sel)) != 3 {
+	if e.sel.category != "Fasteners" || len(e.familyOptions(e.sel)) != 6 {
 		t.Fatalf("category=Fasteners: cat=%q families=%v", e.sel.category, e.familyOptions(e.sel))
 	}
 

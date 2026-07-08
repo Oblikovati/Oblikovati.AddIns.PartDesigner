@@ -122,6 +122,7 @@ type Family struct {
 	Category   CategoryPath
 	Standard   string
 	Generator  string
+	Variant    string // optional generator sub-kind (e.g. socket_screw "cylindrical" vs "countersunk"); "" = the generator's default
 	Units      Units
 	KeyColumns []string
 	Columns    []Column
