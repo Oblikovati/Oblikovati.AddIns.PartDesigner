@@ -36,8 +36,9 @@ type Engine struct {
 	catErr  error // catalogue load error, surfaced by operations that need it
 	gens    *build.Registry
 
-	mu  sync.Mutex // guards sel
-	sel panelState // the panel's current cascading selection
+	mu    sync.Mutex // guards sel + bound
+	sel   panelState // the panel's current cascading selection
+	bound bool       // the active document is a stamped Part Designer part, so a size change re-drives it in place (Change-Size)
 }
 
 // NewEngine binds the engine to the host transport, loading the embedded standards catalogue
@@ -94,6 +95,8 @@ func (e *Engine) Notify(ev []byte) {
 		e.handleCommand(ev)
 	case wire.EventPanelValueChanged:
 		e.handlePanelEdit(ev)
+	case wire.EventDocumentActivated:
+		go e.bindActiveDocument() // reads the stamp + re-shows off the session goroutine
 	}
 }
 
@@ -129,8 +132,17 @@ func (e *Engine) handlePanelEdit(ev []byte) {
 	}
 	e.mu.Lock()
 	e.applySelection(p.ControlID, p.Value)
+	resize := e.bound && p.ControlID == sizeControlID
+	memberKey := e.sel.memberKey
 	e.mu.Unlock()
-	go func() { _, _ = e.ShowPanel() }()
+	// When the panel is bound to a stamped part, changing its Size re-drives that document in
+	// place (Change-Size) rather than only updating the browse selection.
+	go func() {
+		if resize {
+			_ = e.ChangeSize(memberKey)
+		}
+		_, _ = e.ShowPanel()
+	}()
 }
 
 // placeSelection places the panel's current Part + Size selection (the Place button and the
@@ -154,4 +166,8 @@ func (e *Engine) placeSelection() {
 		msg += " (occurrence added to the active assembly)"
 	}
 	_, _ = e.api.Status().SetText(msg)
+	// Bind the panel to the just-placed part so an immediate Size change re-drives it. The
+	// document.activated event fired during creation, BEFORE the stamp was applied, so it left
+	// the panel unbound; reconcile now that the part is stamped (unless an assembly is active).
+	e.bindActiveDocument()
 }
