@@ -31,7 +31,7 @@ func (HexBolt) Build(b *PartBuilder, rm ResolvedMember) error {
 	if err := buildShank(b); err != nil {
 		return err
 	}
-	return threadShank(b, rm)
+	return threadSoleCylinder(b, rm)
 }
 
 // buildHexHead extrudes the hexagonal head up from the XY base plane by head_height.
@@ -65,9 +65,11 @@ func buildShank(b *PartBuilder) error {
 	return b.ExtrudeDirected(sk, "length", "join", "negative")
 }
 
-// threadShank tags the shank's (unique) cylindrical face with a cosmetic thread sized from the
-// member's nominal diameter and pitch.
-func threadShank(b *PartBuilder, rm ResolvedMember) error {
+// threadSoleCylinder tags the part's single cylindrical face with a cosmetic metric thread
+// sized from the member's nominal diameter and pitch. It is the shared terminal step of a
+// fastener that ends with exactly one cylinder — a hex bolt's shank or a hex nut's bore — so
+// CylinderFaceKey's exactly-one guard resolves the right surface unambiguously.
+func threadSoleCylinder(b *PartBuilder, rm ResolvedMember) error {
 	face, err := b.CylinderFaceKey()
 	if err != nil {
 		return err
