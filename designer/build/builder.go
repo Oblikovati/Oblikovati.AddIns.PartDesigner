@@ -15,6 +15,7 @@ import (
 	"strconv"
 
 	"oblikovati.org/api/client"
+	"oblikovati.org/api/types"
 	"oblikovati.org/api/wire"
 	"oblikovati.org/api/wire/featureargs"
 	"oblikovati.org/part-designer/designer/catalog"
@@ -107,6 +108,23 @@ func (b *PartBuilder) Sketch(plane string) (*SketchContext, error) {
 	return &SketchContext{b: b, index: res.SketchIndex}, nil
 }
 
+// OffsetPlaneSketch creates a work plane parallel to XY, offset along +Z by offsetExpr (a
+// parameter name or formula; a negative expression offsets downward), then a sketch on it. A
+// headed screw builds its shank from the head-underside plane so the shank is a fresh solid
+// created after the socket is cut — keeping the shank cylinder analytic for the thread. The
+// plane is created hidden: it is construction scaffolding, not part of the placed standard part.
+func (b *PartBuilder) OffsetPlaneSketch(offsetExpr string) (*SketchContext, error) {
+	wp, err := b.api.WorkPlanes().OffsetHidden(types.WorkRefXYPlane, offsetExpr)
+	if err != nil {
+		return nil, fmt.Errorf("create XY-offset work plane %q: %w", offsetExpr, err)
+	}
+	res, err := b.api.Sketch().Create(wire.CreateSketchArgs{WorkPlaneIndex: &wp.Index})
+	if err != nil {
+		return nil, fmt.Errorf("create sketch on offset plane %q (index %d): %w", offsetExpr, wp.Index, err)
+	}
+	return &SketchContext{b: b, index: res.SketchIndex}, nil
+}
+
 // Extrude extrudes the sketch's first profile to a distance expression (a parameter name or
 // formula) with the given operation (new|join|cut|intersect), in the default (+Z) direction.
 func (b *PartBuilder) Extrude(sk *SketchContext, distanceExpr, operation string) error {
@@ -114,15 +132,35 @@ func (b *PartBuilder) Extrude(sk *SketchContext, distanceExpr, operation string)
 }
 
 // ExtrudeDirected extrudes with an explicit direction ("positive"|"negative"|"symmetric"; ""
-// ⇒ positive). A headed fastener grows its head up (+) and its shank down (−) from the same
-// base plane, so the two solids meet and join there.
+// ⇒ positive). A headed fastener grows its head down (−) from the base plane and its shank
+// further down, so they meet and join.
 func (b *PartBuilder) ExtrudeDirected(sk *SketchContext, distanceExpr, operation, direction string) error {
 	_, err := client.AddFeature(b.api.Features(), featureargs.Extrude{
 		SketchIndex: sk.index, ProfileIndex: 0, Distance: distanceExpr,
 		Operation: operation, Direction: direction,
 	})
 	if err != nil {
-		return fmt.Errorf("extrude sketch %d by %q (%s %s): %w", sk.index, distanceExpr, operation, direction, err)
+		return fmt.Errorf("extrude sketch %d by %q (%s %s): %w",
+			sk.index, distanceExpr, operation, direction, err)
+	}
+	return nil
+}
+
+// Loft blends the bottom sketch's first profile into the top sketch's first profile as a solid
+// (operation new|join|cut). A countersunk screw head is a loft from the head-diameter circle
+// (top) to the shank-diameter circle (bottom, on the head-underside plane): the cone angle is
+// implied by the two parameter-driven diameters and the plane offset, so it re-drives with the
+// size — unlike an extrude taper, whose angle the host cannot express as a formula.
+func (b *PartBuilder) Loft(bottom, top *SketchContext, operation string) error {
+	_, err := client.AddFeature(b.api.Features(), featureargs.Loft{
+		Sections: []featureargs.LoftSection{
+			{SketchIndex: bottom.index, ProfileIndex: 0},
+			{SketchIndex: top.index, ProfileIndex: 0},
+		},
+		Operation: operation,
+	})
+	if err != nil {
+		return fmt.Errorf("loft sketch %d→%d (%s): %w", bottom.index, top.index, operation, err)
 	}
 	return nil
 }
@@ -138,27 +176,4 @@ func (b *PartBuilder) CosmeticThread(faceRef, designation string) error {
 		return fmt.Errorf("thread face %q as %q: %w", faceRef, designation, err)
 	}
 	return nil
-}
-
-// CylinderFaceKey returns the reference key of the part's single cylindrical face — the shank
-// side of a headed fastener, which the thread feature targets. It errors unless exactly one
-// cylinder exists, so an ambiguous (two cylinders) or missing shank is caught rather than
-// silently threading the wrong surface.
-func (b *PartBuilder) CylinderFaceKey() (string, error) {
-	keys, err := b.api.Model().ReferenceKeys()
-	if err != nil {
-		return "", fmt.Errorf("read reference keys: %w", err)
-	}
-	var found []string
-	for _, body := range keys.Bodies {
-		for _, f := range body.Faces {
-			if f.Kind == "cylinder" {
-				found = append(found, f.Key)
-			}
-		}
-	}
-	if len(found) != 1 {
-		return "", fmt.Errorf("want exactly 1 cylindrical face for the shank, found %d", len(found))
-	}
-	return found[0], nil
 }

@@ -21,6 +21,7 @@ type fakeHost struct {
 	failMethod   string   // when non-empty, this wire method returns an error
 	noPoints     bool     // when true, sketch.addEntity returns a circle with no centre point
 	noCylinder   bool     // when true, model.referenceKeys reports no cylindrical face
+	headCylinder bool     // when true, referenceKeys adds a second (head) cylinder above the shank
 	shortPolygon bool     // when true, a polygon add returns too few points (missing centre)
 
 	methods      []string
@@ -29,10 +30,12 @@ type fakeHost struct {
 	circleRadius string
 	constraints  []string // geometric constraint kinds, in order
 	dimensions   []wire.AddDimensionArgs
-	extrude      featureargs.Extrude   // the last extrude (back-compat with the round-bar test)
-	extrudeKind  string                // the last feature kind
-	extrudes     []featureargs.Extrude // every extrude, in order
-	threads      []featureargs.Thread  // every cosmetic/cut thread, in order
+	extrude      featureargs.Extrude        // the last extrude (back-compat with the round-bar test)
+	extrudeKind  string                     // the last feature kind
+	extrudes     []featureargs.Extrude      // every extrude, in order
+	threads      []featureargs.Thread       // every cosmetic/cut thread, in order
+	lofts        []featureargs.Loft         // every loft, in order
+	workPlanes   []wire.CreateWorkPlaneArgs // every work plane created, in order
 }
 
 // Call records the method and returns a minimal reply per the wire method.
@@ -58,6 +61,9 @@ func (h *fakeHost) Call(method string, req []byte) ([]byte, error) {
 		h.dimensions = append(h.dimensions, decode[wire.AddDimensionArgs](req))
 	case wire.MethodSketchConstraintStatus:
 		return json.Marshal(wire.ConstraintStatusResult{DOF: h.dof, Status: "checked"})
+	case wire.MethodWorkPlanesCreate:
+		h.workPlanes = append(h.workPlanes, decode[wire.CreateWorkPlaneArgs](req))
+		return json.Marshal(wire.CreateWorkPlaneResult{Index: 2, Ref: "wp/2", Name: "Offset", Healthy: true})
 	case wire.MethodModelReferenceKeys:
 		return h.referenceKeysReply()
 	case wire.MethodFeaturesAdd:
@@ -101,12 +107,17 @@ func (h *fakeHost) addEntityReply(req []byte) ([]byte, error) {
 	return json.Marshal(wire.AddSketchEntityResult{EntityID: 10, PointIDs: []uint64{11, 12}})
 }
 
-// referenceKeysReply reports a plane head-face plus one cylindrical shank face (suppressed by
-// noCylinder, to exercise the CylinderFaceKey guard).
+// referenceKeysReply reports a plane head-face plus the shank's cylindrical face (suppressed by
+// noCylinder, to exercise the missing-cylinder guard). Each face carries a representative point;
+// the shank sits deepest (z=-20). With headCylinder a second, higher cylinder (the socket cap
+// screw's cylindrical head, z=-4) is added so ShankCylinderFaceKey's lowest-face pick is tested.
 func (h *fakeHost) referenceKeysReply() ([]byte, error) {
-	faces := []wire.TopologyRef{{Key: "head-top", Kind: "plane"}}
+	faces := []wire.TopologyRef{{Key: "head-top", Kind: "plane", Point: []float64{0, 0, 0}}}
+	if h.headCylinder {
+		faces = append(faces, wire.TopologyRef{Key: "head-cyl", Kind: "cylinder", Point: []float64{0, 0, -4}})
+	}
 	if !h.noCylinder {
-		faces = append(faces, wire.TopologyRef{Key: "shank-cyl", Kind: "cylinder"})
+		faces = append(faces, wire.TopologyRef{Key: "shank-cyl", Kind: "cylinder", Point: []float64{0, 0, -20}})
 	}
 	return json.Marshal(wire.ReferenceKeysResult{Bodies: []wire.BodyTopology{{Faces: faces}}})
 }
@@ -126,6 +137,10 @@ func (h *fakeHost) featureReply(req []byte) ([]byte, error) {
 		var t featureargs.Thread
 		_ = json.Unmarshal(args.Args, &t)
 		h.threads = append(h.threads, t)
+	case featureargs.KindLoft:
+		var l featureargs.Loft
+		_ = json.Unmarshal(args.Args, &l)
+		h.lofts = append(h.lofts, l)
 	}
 	return []byte("{}"), nil
 }

@@ -32,6 +32,7 @@ type familyFile struct {
 	Category   string                       `json:"category"`
 	Standard   string                       `json:"standard"`
 	Generator  string                       `json:"generator"`
+	Variant    string                       `json:"variant,omitempty"`
 	Units      string                       `json:"units"`
 	KeyColumns []string                     `json:"keyColumns"`
 	Columns    []Column                     `json:"columns"`
@@ -111,7 +112,7 @@ func (ff *familyFile) build() (*Family, error) {
 	}
 	fam := &Family{
 		ID: ff.ID, Category: category, Standard: ff.Standard, Generator: ff.Generator,
-		Units: Units(ff.Units), KeyColumns: ff.KeyColumns, Columns: ff.Columns,
+		Variant: ff.Variant, Units: Units(ff.Units), KeyColumns: ff.KeyColumns, Columns: ff.Columns,
 	}
 	if err := fam.buildMembers(ff.Members); err != nil {
 		return nil, err
