@@ -81,6 +81,20 @@ func TestByCategoryPrefix(t *testing.T) {
 	if !containsID(channels, "upn-en10279") || !containsID(channels, "c-aisc") {
 		t.Errorf("Structural/Channels = %v, want the UPN and AISC C channels", ids(channels))
 	}
+	angles := c.ByCategory(CategoryPath{"Structural", "Angles"})
+	if !containsID(angles, "angle-equal-en10056") || !containsID(angles, "angle-unequal-en10056") {
+		t.Errorf("Structural/Angles = %v, want the equal and unequal EN 10056 angles", ids(angles))
+	}
+	tees := c.ByCategory(CategoryPath{"Structural", "Tees"})
+	if len(tees) != 1 || !containsID(tees, "tee-en10055") {
+		t.Errorf("Structural/Tees = %v, want just the EN 10055 tee", ids(tees))
+	}
+	hollow := c.ByCategory(CategoryPath{"Structural", "Hollow Sections"})
+	for _, id := range []string{"shs-en10219", "rhs-en10219", "chs-en10219"} {
+		if !containsID(hollow, id) {
+			t.Errorf("Structural/Hollow Sections = %v, want SHS/RHS/CHS (missing %s)", ids(hollow), id)
+		}
+	}
 	// An empty prefix matches everything.
 	if got := c.ByCategory(nil); len(got) != c.Len() {
 		t.Errorf("empty prefix matched %d, want all %d", len(got), c.Len())

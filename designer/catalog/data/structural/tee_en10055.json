@@ -1,0 +1,23 @@
+{
+  "id": "tee-en10055",
+  "category": "Structural/Tees/T",
+  "standard": "EN 10055",
+  "generator": "tee",
+  "units": "mm",
+  "keyColumns": ["designation"],
+  "columns": [
+    { "name": "designation", "param": "designation", "type": "text" },
+    { "name": "h", "param": "height", "type": "length" },
+    { "name": "b", "param": "flange_width", "type": "length" },
+    { "name": "tw", "param": "web_thickness", "type": "length" },
+    { "name": "tf", "param": "flange_thickness", "type": "length" },
+    { "name": "l", "param": "length", "type": "length" }
+  ],
+  "members": [
+    { "designation": "T 40", "h": 40, "b": 40, "tw": 5, "tf": 5, "l": 6000 },
+    { "designation": "T 50", "h": 50, "b": 50, "tw": 6, "tf": 6, "l": 6000 },
+    { "designation": "T 60", "h": 60, "b": 60, "tw": 7, "tf": 7, "l": 6000 },
+    { "designation": "T 70", "h": 70, "b": 70, "tw": 8, "tf": 8, "l": 6000 },
+    { "designation": "T 80", "h": 80, "b": 80, "tw": 9, "tf": 9, "l": 6000 }
+  ]
+}

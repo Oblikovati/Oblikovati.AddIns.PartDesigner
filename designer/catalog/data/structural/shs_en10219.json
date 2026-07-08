@@ -1,0 +1,22 @@
+{
+  "id": "shs-en10219",
+  "category": "Structural/Hollow Sections/SHS",
+  "standard": "EN 10219",
+  "generator": "hollow_rect",
+  "units": "mm",
+  "keyColumns": ["designation"],
+  "columns": [
+    { "name": "designation", "param": "designation", "type": "text" },
+    { "name": "b", "param": "width", "type": "length" },
+    { "name": "h", "param": "height", "type": "length" },
+    { "name": "t", "param": "thickness", "type": "length" },
+    { "name": "l", "param": "length", "type": "length" }
+  ],
+  "members": [
+    { "designation": "SHS 40x40x3", "b": 40, "h": 40, "t": 3, "l": 6000 },
+    { "designation": "SHS 50x50x3", "b": 50, "h": 50, "t": 3, "l": 6000 },
+    { "designation": "SHS 60x60x4", "b": 60, "h": 60, "t": 4, "l": 6000 },
+    { "designation": "SHS 80x80x4", "b": 80, "h": 80, "t": 4, "l": 6000 },
+    { "designation": "SHS 100x100x5", "b": 100, "h": 100, "t": 5, "l": 6000 }
+  ]
+}
