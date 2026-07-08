@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"oblikovati.org/api/wire"
+	"oblikovati.org/part-designer/designer/catalog"
 )
 
 // controlByID finds a panel control by id.
@@ -92,6 +93,43 @@ func TestSelectionCascade(t *testing.T) {
 	if got := len(e.familyOptions(e.sel)); got != e.catalog.Len() {
 		t.Errorf("family options after clearing filter = %d, want all %d", got, e.catalog.Len())
 	}
+}
+
+// TestSearchNarrowsAndSelects is the F1 acceptance check: typing a search query narrows the Part
+// list to matching families and re-picks a valid family, and clearing the search restores all.
+func TestSearchNarrowsAndSelects(t *testing.T) {
+	e := NewEngine(newFakeHost())
+
+	// Searching a bearing designation narrows the Part list to that family and selects it.
+	e.applySelection(searchControlID, "6205")
+	opts := e.familyOptions(e.sel)
+	if len(opts) != 1 || !contains(opts, "ISO 15 Deep Groove") {
+		t.Fatalf("search 6205 family options = %v, want just the ISO 15 ball bearing", opts)
+	}
+	if e.sel.familyID != "iso15-deep-groove-ball-bearing" {
+		t.Errorf("family after search = %q, want the ball bearing", e.sel.familyID)
+	}
+
+	// The searched size is offered in the now-selected family's Size dropdown.
+	if !contains(sizeOptions(mustFamily(t, e)), "6205") {
+		t.Errorf("size options after 6205 search = %v, want to include 6205", sizeOptions(mustFamily(t, e)))
+	}
+
+	// Clearing the search restores every family.
+	e.applySelection(searchControlID, "")
+	if got := len(e.familyOptions(e.sel)); got != e.catalog.Len() {
+		t.Errorf("family options after clearing search = %d, want all %d", got, e.catalog.Len())
+	}
+}
+
+// mustFamily returns the engine's currently-selected family or fails.
+func mustFamily(t *testing.T, e *Engine) *catalog.Family {
+	t.Helper()
+	fam, ok := e.family(e.sel.familyID)
+	if !ok {
+		t.Fatalf("no family selected (%q)", e.sel.familyID)
+	}
+	return fam
 }
 
 // TestSelectFamilyAndCategory covers picking a family by its label and filtering by category.

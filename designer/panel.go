@@ -19,6 +19,7 @@ const PanelID = "com.oblikovati.part-designer.panel"
 const (
 	categoryControlID = "category"
 	standardControlID = "standard"
+	searchControlID   = "search"
 	familyControlID   = "family"
 	sizeControlID     = "size"
 )
@@ -56,6 +57,7 @@ func (e *Engine) browserControls(sel panelState) []wire.PanelControlSpec {
 		client.PanelLabel("hdr", "— Standard Parts —"),
 		client.PanelDropdown(categoryControlID, "Category", e.categoryOptions(), orAll(sel.category)),
 		client.PanelDropdown(standardControlID, "Standard", e.standardOptions(), orAll(sel.standard)),
+		client.PanelTextBox(searchControlID, "Search", sel.search),
 		client.PanelDropdown(familyControlID, "Part", e.familyOptions(sel), labelOf(fam)),
 		client.PanelDropdown(sizeControlID, "Size", sizeOptions(fam), sizeLabelOf(fam, sel.memberKey)),
 		{Kind: types.PanelSeparator},
@@ -98,7 +100,7 @@ func (e *Engine) standardOptions() []string {
 // familyOptions lists the labels of the families matching the current filters.
 func (e *Engine) familyOptions(sel panelState) []string {
 	var opts []string
-	for _, f := range e.filteredFamilies(sel.category, sel.standard) {
+	for _, f := range e.filteredFamilies(sel) {
 		opts = append(opts, familyLabel(f))
 	}
 	return opts
