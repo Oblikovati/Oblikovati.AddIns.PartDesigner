@@ -44,8 +44,12 @@ func TestByCategoryPrefix(t *testing.T) {
 	}
 
 	all := c.ByCategory(CategoryPath{"Fasteners"})
-	if len(all) != 11 {
-		t.Errorf("Fasteners subtree = %v, want the eleven fastener families", ids(all))
+	if len(all) != 13 {
+		t.Errorf("Fasteners subtree = %v, want the thirteen fastener families", ids(all))
+	}
+	studs := c.ByCategory(CategoryPath{"Fasteners", "Studs"})
+	if !containsID(studs, "din976-threaded-rod") || !containsID(studs, "din939-stud") {
+		t.Errorf("Fasteners/Studs = %v, want the threaded rod and double-end stud", ids(studs))
 	}
 	bolts := c.ByCategory(CategoryPath{"Fasteners", "Bolts"})
 	if !containsID(bolts, "iso4017-hex-bolt") || !containsID(bolts, "din933-hex-bolt") {

@@ -183,13 +183,25 @@ func (b *PartBuilder) Coil(sk *SketchContext, heightExpr, revolutionsExpr string
 
 // CosmeticThread tags a cylindrical face (by reference key) with a representational, non-cut
 // thread of the given designation (e.g. "M8x1.25") — the Content-Center convention for
-// standard fasteners, which show thread lines without modelling the helical cut.
+// standard fasteners, which show thread lines without modelling the helical cut. The thread
+// runs the full length of the face.
 func (b *PartBuilder) CosmeticThread(faceRef, designation string) error {
+	return b.CosmeticThreadSpan(faceRef, designation, "", "")
+}
+
+// CosmeticThreadSpan is CosmeticThread limited to an axial window of the face: the thread runs
+// for lengthExpr starting offsetExpr up from the face's start edge (both distance expressions;
+// empty offset ⇒ 0, empty length ⇒ the full face). A double-ended stud threads its two ends by
+// applying two spans to its single cylindrical face — the metal end at offset 0 and the nut end
+// at the far end — leaving the plain shank between them bare.
+func (b *PartBuilder) CosmeticThreadSpan(faceRef, designation, offsetExpr, lengthExpr string) error {
 	_, err := client.AddFeature(b.api.Features(), featureargs.Thread{
 		FaceRef: faceRef, Designation: designation, Cut: false,
+		Offset: offsetExpr, Length: lengthExpr,
 	})
 	if err != nil {
-		return fmt.Errorf("thread face %q as %q: %w", faceRef, designation, err)
+		return fmt.Errorf("thread face %q as %q (offset %q, length %q): %w",
+			faceRef, designation, offsetExpr, lengthExpr, err)
 	}
 	return nil
 }
