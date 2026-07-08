@@ -1,0 +1,26 @@
+{
+  "id": "iso15-cylindrical-roller-bearing",
+  "category": "Bearings/Roller Bearings/Cylindrical",
+  "standard": "ISO 15",
+  "generator": "roller_bearing",
+  "units": "mm",
+  "keyColumns": ["designation"],
+  "columns": [
+    { "name": "designation", "param": "designation", "type": "text" },
+    { "name": "d", "param": "bore", "type": "length" },
+    { "name": "D", "param": "outer_dia", "type": "length" },
+    { "name": "B", "param": "width", "type": "length" },
+    { "name": "Z", "param": "roller_count", "type": "count" }
+  ],
+  "members": [
+    { "designation": "NU202", "d": 15, "D": 35, "B": 11, "Z": 11 },
+    { "designation": "NU203", "d": 17, "D": 40, "B": 12, "Z": 11 },
+    { "designation": "NU204", "d": 20, "D": 47, "B": 14, "Z": 12 },
+    { "designation": "NU205", "d": 25, "D": 52, "B": 15, "Z": 12 },
+    { "designation": "NU206", "d": 30, "D": 62, "B": 16, "Z": 13 },
+    { "designation": "NU207", "d": 35, "D": 72, "B": 17, "Z": 13 },
+    { "designation": "NU208", "d": 40, "D": 80, "B": 18, "Z": 14 },
+    { "designation": "NU209", "d": 45, "D": 85, "B": 19, "Z": 14 },
+    { "designation": "NU210", "d": 50, "D": 90, "B": 20, "Z": 15 }
+  ]
+}

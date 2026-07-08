@@ -49,17 +49,19 @@ func (BallBearing) Build(b *PartBuilder, rm ResolvedMember) error {
 	return b.revolveRing("outer_race_dia", "outer_dia")
 }
 
-// deriveBearingParams adds the formula parameters the geometry references: the pitch circle
-// (midway between bore and outer diameter), the ball diameter (a fraction of the radial gap), and
-// the two race diameters (the pitch circle inset by a fraction of the gap, so each ring is a solid
-// annulus clearing the balls).
-func deriveBearingParams(b *PartBuilder) error {
-	const gap = "(outer_dia - bore)"
+// raceGap is the radial gap (outer_dia − bore) every rolling bearing's derived diameters are
+// scaled from — the space the rings and rolling elements share.
+const raceGap = "(outer_dia - bore)"
+
+// deriveRaceParams adds the ring diameters shared by every rolling bearing: the pitch circle
+// (midway between bore and outer diameter) and the two race diameters (the pitch circle inset by a
+// fraction of the gap, so each ring is a solid annulus clearing the rolling elements). Roller and
+// ball bearings both build their rings from these.
+func deriveRaceParams(b *PartBuilder) error {
 	derived := []struct{ name, expr string }{
 		{"pitch_dia", "(bore + outer_dia) / 2"},
-		{"ball_dia", gap + " * " + ballGapFraction},
-		{"inner_race_dia", "pitch_dia - " + gap + " * " + raceInsetFraction},
-		{"outer_race_dia", "pitch_dia + " + gap + " * " + raceInsetFraction},
+		{"inner_race_dia", "pitch_dia - " + raceGap + " * " + raceInsetFraction},
+		{"outer_race_dia", "pitch_dia + " + raceGap + " * " + raceInsetFraction},
 	}
 	for _, d := range derived {
 		if err := b.DeriveParam(d.name, d.expr); err != nil {
@@ -67,6 +69,15 @@ func deriveBearingParams(b *PartBuilder) error {
 		}
 	}
 	return nil
+}
+
+// deriveBearingParams adds the ball bearing's derived parameters: the shared race diameters plus
+// the ball diameter (a fraction of the radial gap).
+func deriveBearingParams(b *PartBuilder) error {
+	if err := deriveRaceParams(b); err != nil {
+		return err
+	}
+	return b.DeriveParam("ball_dia", raceGap+" * "+ballGapFraction)
 }
 
 // revolveRing builds one ring as a solid of revolution: a rectangular radial section from innerDia

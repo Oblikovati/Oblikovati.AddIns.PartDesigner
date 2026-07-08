@@ -68,27 +68,21 @@ func (r *Registry) Kinds() []string {
 	return out
 }
 
-// DefaultRegistry returns a registry with every built-in generator registered. Category
-// PBIs (B/C/D/E) add their generators here as they land.
+// builtinGenerators is every generator the DefaultRegistry registers, grouped by category PBI
+// (structural, shaft parts, fasteners, bearings). New part types append here as they land.
+var builtinGenerators = []PartGenerator{
+	RoundBar{}, FlatBar{}, IBeam{}, Channel{}, Angle{}, Tee{}, HollowRect{}, HollowRound{},
+	Key{}, Pin{}, Circlip{},
+	HexBolt{}, SocketScrew{}, HexNut{}, Washer{}, Stud{},
+	BallBearing{}, RollerBearing{}, PlainBush{},
+}
+
+// DefaultRegistry returns a registry with every built-in generator registered.
 func DefaultRegistry() *Registry {
 	r := NewRegistry()
-	mustRegister(r, RoundBar{})
-	mustRegister(r, FlatBar{})
-	mustRegister(r, IBeam{})
-	mustRegister(r, Channel{})
-	mustRegister(r, Angle{})
-	mustRegister(r, Tee{})
-	mustRegister(r, HollowRect{})
-	mustRegister(r, HollowRound{})
-	mustRegister(r, Key{})
-	mustRegister(r, Pin{})
-	mustRegister(r, Circlip{})
-	mustRegister(r, HexBolt{})
-	mustRegister(r, SocketScrew{})
-	mustRegister(r, HexNut{})
-	mustRegister(r, Washer{})
-	mustRegister(r, Stud{})
-	mustRegister(r, BallBearing{})
+	for _, g := range builtinGenerators {
+		mustRegister(r, g)
+	}
 	return r
 }
 
