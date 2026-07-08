@@ -1,0 +1,22 @@
+{
+  "id": "ipe-en10365",
+  "category": "Structural/Beams/IPE",
+  "standard": "EN 10365",
+  "generator": "i_beam",
+  "units": "mm",
+  "keyColumns": ["designation"],
+  "columns": [
+    { "name": "designation", "param": "designation", "type": "text" },
+    { "name": "h", "param": "height", "type": "length" },
+    { "name": "b", "param": "flange_width", "type": "length" },
+    { "name": "tw", "param": "web_thickness", "type": "length" },
+    { "name": "tf", "param": "flange_thickness", "type": "length" },
+    { "name": "l", "param": "length", "type": "length" }
+  ],
+  "members": [
+    { "designation": "IPE 100", "h": 100, "b": 55, "tw": 4.1, "tf": 5.7, "l": 6000 },
+    { "designation": "IPE 200", "h": 200, "b": 100, "tw": 5.6, "tf": 8.5, "l": 6000 },
+    { "designation": "IPE 300", "h": 300, "b": 150, "tw": 7.1, "tf": 10.7, "l": 6000 },
+    { "designation": "IPE 400", "h": 400, "b": 180, "tw": 8.6, "tf": 13.5, "l": 6000 }
+  ]
+}

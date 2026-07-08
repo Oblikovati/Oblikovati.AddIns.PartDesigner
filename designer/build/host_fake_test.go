@@ -109,6 +109,16 @@ func (h *fakeHost) addEntityReply(req []byte) ([]byte, error) {
 			PointIDs:  []uint64{44, 45, 46, 47}, // 4 corners: BL, BR, TR, TL
 		})
 	}
+	if a.Kind == "polyline" {
+		n := len(a.Points) // one corner + one edge per point in a closed loop
+		pts, edges := make([]uint64, n), make([]uint64, n)
+		for i := 0; i < n; i++ {
+			pts[i], edges[i] = uint64(50+i), uint64(70+i)
+		}
+		return json.Marshal(wire.AddSketchEntityResult{
+			EntityID: 70, Kind: "polyline", EntityIDs: edges, PointIDs: pts,
+		})
+	}
 	if h.noPoints {
 		return json.Marshal(wire.AddSketchEntityResult{EntityID: 10})
 	}
