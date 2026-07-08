@@ -24,8 +24,8 @@ func TestTreeGroupsFamiliesByCategory(t *testing.T) {
 	}
 
 	hexHead := child(t, child(t, fasteners, "Bolts"), "Hex Head")
-	if len(hexHead.Families) != 1 || hexHead.Families[0].ID != "iso4017-hex-bolt" {
-		t.Errorf("Hex Head families = %v, want [iso4017-hex-bolt]", ids(hexHead.Families))
+	if !containsID(hexHead.Families, "iso4017-hex-bolt") || !containsID(hexHead.Families, "din933-hex-bolt") {
+		t.Errorf("Hex Head families = %v, want both hex bolts (ISO 4017 + DIN 933)", ids(hexHead.Families))
 	}
 	if got := hexHead.Path.String(); got != "Fasteners/Bolts/Hex Head" {
 		t.Errorf("Hex Head node path = %q, want Fasteners/Bolts/Hex Head", got)

@@ -39,6 +39,51 @@ func (s *SketchContext) GroundedCircle(cx, cy float64, diameterExpr string) erro
 	return nil
 }
 
+// hexFlatSeed is the arbitrary construction span (cm) the hexagon is drawn at before its
+// across-corners dimension drives it to the member's true size — a non-degenerate seed the
+// solver scales, exactly as GroundedCircle's literal centre is a seed the diameter dimension
+// overrides. The dimension, not this literal, is authoritative.
+const hexFlatSeed = 1.0
+
+// GroundedHexagon adds a regular hexagon centred on the origin with one flat facing +X, then
+// fully constrains it (DOF 0) so acrossFlatsExpr — a parameter name or formula — drives its
+// wrench size. AddPolygon already makes it a rigid *regular* hexagon (a construction
+// circumscribed circle pins the vertices to one radius, equal edges make it regular); this
+// pins the remaining four DOF: the centre (Fix, 2), the rotation (the +X flat is Vertical, 1)
+// and the size (1). Size is set by an across-corners distance dimension: a hexagon's
+// corner-to-corner span is its across-flats over cos 30°, so the dimension expression is
+// derived from the across-flats parameter and re-drives the head when that parameter changes.
+func (s *SketchContext) GroundedHexagon(acrossFlatsExpr string) error {
+	res, err := s.b.api.Sketch().AddPolygon(s.index, []float64{0, 0}, []float64{hexFlatSeed, 0}, 6, "circumscribed", false)
+	if err != nil {
+		return fmt.Errorf("add hexagon: %w", err)
+	}
+	if len(res.PointIDs) < 7 {
+		return fmt.Errorf("hexagon returned %d points, want 6 corners + centre", len(res.PointIDs))
+	}
+	return s.constrainHexagon(res.PointIDs, acrossFlatsExpr)
+}
+
+// constrainHexagon pins a regular hexagon (its PointIDs are the six corners in order followed
+// by the centre) to DOF 0 from the across-flats parameter. Corners 0 and 3 are diametrically
+// opposite, so their distance is the across-corners span; corners 0 and 1 span the +X flat,
+// so making that edge vertical fixes the rotation.
+func (s *SketchContext) constrainHexagon(pointIDs []uint64, acrossFlatsExpr string) error {
+	corners, center := pointIDs[:6], pointIDs[6]
+	con := s.b.api.Sketch().Constrain(s.index)
+	if _, err := con.Fix(center); err != nil {
+		return fmt.Errorf("fix hexagon centre: %w", err)
+	}
+	if _, err := con.Vertical(corners[0], corners[1]); err != nil {
+		return fmt.Errorf("pin hexagon rotation: %w", err)
+	}
+	span := "(" + acrossFlatsExpr + ") / cos(30 deg)"
+	if _, err := s.b.api.Sketch().Dimension(s.index).Distance(corners[0], corners[3], span); err != nil {
+		return fmt.Errorf("dimension hexagon across-corners %q: %w", span, err)
+	}
+	return nil
+}
+
 // AssertFullyConstrained fails when the sketch is not DOF-0, so a generator that leaves a
 // profile under-constrained is caught rather than silently producing a floppy part. The
 // host computes the real DOF from the constraint solver.
