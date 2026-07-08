@@ -9,6 +9,8 @@ package designer
 
 import (
 	"encoding/json"
+	"fmt"
+	"sync"
 
 	"oblikovati.org/api/client"
 	"oblikovati.org/api/wire"
@@ -33,18 +35,23 @@ type Engine struct {
 	catalog *catalog.Catalog
 	catErr  error // catalogue load error, surfaced by operations that need it
 	gens    *build.Registry
+
+	mu  sync.Mutex // guards sel
+	sel panelState // the panel's current cascading selection
 }
 
 // NewEngine binds the engine to the host transport, loading the embedded standards catalogue
 // and the built-in generator registry. A catalogue load failure (a malformed embedded table,
 // which the build/tests guard against) is stored and surfaced by the operations that need
-// it, so a bad table never crashes the host at Activate.
+// it, so a bad table never crashes the host at Activate. The panel opens on the first family.
 func NewEngine(host HostCaller) *Engine {
 	cat, err := catalog.Load()
-	return &Engine{
+	e := &Engine{
 		host: host, api: client.New(host),
 		catalog: cat, catErr: err, gens: build.DefaultRegistry(),
 	}
+	e.sel = e.defaultSelection()
+	return e
 }
 
 // Catalog exposes the loaded standards catalogue (nil if it failed to load) for the panel
@@ -68,8 +75,8 @@ func (e *Engine) Setup() error {
 	return err
 }
 
-// Notify receives host event bytes. The "Part Designer" command re-opens the panel;
-// everything else is ignored for now.
+// Notify receives host event bytes: a command (the Show button or the Place command) or a
+// panel dropdown edit.
 //
 // CRITICAL: Notify is invoked ON the host's session goroutine (events are emitted from
 // inside the frame loop). A host call from this goroutine blocks until the frame loop
@@ -82,14 +89,17 @@ func (e *Engine) Notify(ev []byte) {
 	if json.Unmarshal(ev, &hdr) != nil {
 		return
 	}
-	if hdr.Type == wire.EventCommandStarted {
+	switch hdr.Type {
+	case wire.EventCommandStarted:
 		e.handleCommand(ev)
+	case wire.EventPanelValueChanged:
+		e.handlePanelEdit(ev)
 	}
 }
 
-// handleCommand routes the add-in's commands. The "Part Designer" button (re)opens the
-// dockable panel; ShowPanel makes host calls (which deadlock inline — see Notify), so it
-// runs on its own goroutine.
+// handleCommand routes the add-in's commands: the "Part Designer" button (re)opens the
+// panel; the Place command places the current selection. Both make host calls (which
+// deadlock inline — see Notify), so they run on their own goroutines.
 func (e *Engine) handleCommand(ev []byte) {
 	var c struct {
 		Command string `json:"command"`
@@ -97,7 +107,51 @@ func (e *Engine) handleCommand(ev []byte) {
 	if json.Unmarshal(ev, &c) != nil {
 		return
 	}
-	if c.Command == ShowCommandID {
+	switch c.Command {
+	case ShowCommandID:
 		go func() { _, _ = e.ShowPanel() }()
+	case PlaceCommandID:
+		go e.placeSelection()
 	}
+}
+
+// handlePanelEdit applies one dropdown edit to the cascading selection and re-shows the panel
+// with the updated downstream choices. The selection mutation is cheap (no host call) and
+// safe on the session goroutine; the re-show makes host calls, so it runs on its own.
+func (e *Engine) handlePanelEdit(ev []byte) {
+	var p struct {
+		WindowID  string `json:"windowId"`
+		ControlID string `json:"controlId"`
+		Value     string `json:"value"`
+	}
+	if json.Unmarshal(ev, &p) != nil || p.WindowID != PanelID {
+		return
+	}
+	e.mu.Lock()
+	e.applySelection(p.ControlID, p.Value)
+	e.mu.Unlock()
+	go func() { _, _ = e.ShowPanel() }()
+}
+
+// placeSelection places the panel's current Part + Size selection (the Place button and the
+// headless Place command both land here), reporting the outcome on the host status bar so a
+// failure is visible rather than silently producing nothing.
+func (e *Engine) placeSelection() {
+	e.mu.Lock()
+	sel := e.sel
+	e.mu.Unlock()
+	if sel.familyID == "" || sel.memberKey == "" {
+		_, _ = e.api.Status().SetText("Part Designer: choose a part and size first")
+		return
+	}
+	res, err := e.Place(sel.familyID, sel.memberKey)
+	if err != nil {
+		_, _ = e.api.Status().SetText("Part Designer: " + err.Error())
+		return
+	}
+	msg := fmt.Sprintf("Part Designer: placed %s %s", sel.familyID, sel.memberKey)
+	if res.Occurrence {
+		msg += " (occurrence added to the active assembly)"
+	}
+	_, _ = e.api.Status().SetText(msg)
 }

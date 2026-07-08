@@ -32,10 +32,10 @@ enforces this.
 | Area | State |
 | --- | --- |
 | A1 — scaffold + host load (ribbon button + dockable panel) | done — loads live; `PartDesigner.Show` command + dockable panel confirmed on the running head |
-| A2 — catalogue data model & standards loader | planned |
-| A3 — generator framework + PartBuilder | planned |
-| A4 — placement + Change-Size | planned |
-| A5 — panel UI + headless commands | planned |
+| A2 — catalogue data model & standards loader | done |
+| A3 — generator framework + PartBuilder | done |
+| A4 — placement + Change-Size | done |
+| A5 — panel UI + headless commands | done — cascading dropdowns + Place; live-confirmed (round bar placed) |
 | B/C/D/E — Fasteners / Structural / Shaft / Bearings generators | planned |
 
 Milestone and issues: see the repository's GitHub tracker

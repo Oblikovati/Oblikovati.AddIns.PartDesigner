@@ -11,19 +11,19 @@ import (
 )
 
 // TestSetupRegistersButtonAndShowsPanel is the A1 acceptance check: activating the add-in
-// must register exactly the "Part Designer" ribbon button (with its glyph + large style)
-// and show the dockable panel — the two host-facing effects the cgo shell triggers on a
-// background goroutine at Activate.
+// must register the "Part Designer" ribbon button (with its glyph + large style) and the
+// headless Place command, and show the dockable panel — the host-facing effects the cgo
+// shell triggers on a background goroutine at Activate.
 func TestSetupRegistersButtonAndShowsPanel(t *testing.T) {
-	host := &fakeHost{}
+	host := newFakeHost()
 	if err := NewEngine(host).Setup(); err != nil {
 		t.Fatalf("Setup() error = %v", err)
 	}
 
-	if len(host.commands) != 1 {
-		t.Fatalf("commands registered = %d, want 1 (%v)", len(host.commands), host.methods)
+	if len(host.commands) != 2 {
+		t.Fatalf("commands registered = %d, want 2 (Show + Place) (%v)", len(host.commands), host.methods)
 	}
-	cmd := host.commands[0]
+	cmd := host.commands[0] // createShowCommand runs first
 	if cmd.ID != ShowCommandID {
 		t.Errorf("command ID = %q, want %q", cmd.ID, ShowCommandID)
 	}
@@ -35,6 +35,9 @@ func TestSetupRegistersButtonAndShowsPanel(t *testing.T) {
 	}
 	if cmd.IconSVG == "" {
 		t.Error("command IconSVG is empty; the ribbon button must ship its glyph")
+	}
+	if host.commands[1].ID != PlaceCommandID {
+		t.Errorf("second command = %q, want the headless %q", host.commands[1].ID, PlaceCommandID)
 	}
 
 	if len(host.windows) != 1 {

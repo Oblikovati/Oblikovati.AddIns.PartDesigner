@@ -1,0 +1,19 @@
+{
+  "id": "iso1035-round-bar",
+  "category": "Structural/Bars/Round",
+  "standard": "ISO 1035",
+  "generator": "round_bar",
+  "units": "mm",
+  "keyColumns": ["d", "l"],
+  "columns": [
+    { "name": "d", "param": "nominal_dia", "type": "length" },
+    { "name": "l", "param": "length", "type": "length" }
+  ],
+  "members": [
+    { "d": 10, "l": 1000 },
+    { "d": 12, "l": 1000 },
+    { "d": 16, "l": 1000 },
+    { "d": 20, "l": 1000 },
+    { "d": 25, "l": 1000 }
+  ]
+}

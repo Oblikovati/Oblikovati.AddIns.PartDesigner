@@ -39,6 +39,7 @@ type fakeHost struct {
 	set      []wire.ParameterSetArgs
 	placed   []wire.PlaceOccurrenceArgs
 	updates  int
+	status   string // last status.setText text
 }
 
 func newFakeHost() *fakeHost {
@@ -97,6 +98,8 @@ func (h *fakeHost) Call(method string, req []byte) ([]byte, error) {
 		return h.getAttr(decodeReq[wire.GetAttributeArgs](req))
 	case wire.MethodAssemblyPlace:
 		h.placed = append(h.placed, decodeReq[wire.PlaceOccurrenceArgs](req))
+	case wire.MethodStatusSetText:
+		h.status = decodeReq[wire.SetStatusTextArgs](req).Text
 	case wire.MethodParametersList:
 		return h.listParams()
 	case wire.MethodParametersAdd:
