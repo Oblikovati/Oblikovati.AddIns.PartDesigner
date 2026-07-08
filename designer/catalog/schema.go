@@ -52,8 +52,9 @@ func (t ColumnType) valid() bool {
 	}
 }
 
-// numeric reports whether cells of this column carry a number (vs a text label).
-func (t ColumnType) numeric() bool { return t != ColumnText }
+// Numeric reports whether cells of this column carry a number (vs a text label). Generators
+// publish numeric columns as dimensional parameters and skip text columns.
+func (t ColumnType) Numeric() bool { return t != ColumnText }
 
 // Column maps one family-table column to the parameter a generator drives from it. Name is
 // the cell key in the member rows; Param is the published parameter name the generator's

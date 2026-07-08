@@ -213,7 +213,7 @@ func (f *Family) buildMember(row map[string]json.RawMessage) (Member, error) {
 
 // assignCell parses one raw cell into the right typed map per its column type.
 func assignCell(col Column, cell json.RawMessage, values map[string]float64, labels map[string]string) error {
-	if col.Type.numeric() {
+	if col.Type.Numeric() {
 		var v float64
 		if err := json.Unmarshal(cell, &v); err != nil {
 			return fmt.Errorf("column %q: cell %s is not a number", col.Name, string(cell))

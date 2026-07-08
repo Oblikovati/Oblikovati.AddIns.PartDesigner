@@ -67,7 +67,7 @@ func TestColumnAndUnitsValidity(t *testing.T) {
 	if ColumnType("weight").valid() {
 		t.Error("unknown column type reported valid")
 	}
-	if ColumnText.numeric() || !ColumnLength.numeric() {
+	if ColumnText.Numeric() || !ColumnLength.Numeric() {
 		t.Error("numeric() misclassifies a column type")
 	}
 }
