@@ -1,0 +1,20 @@
+{
+  "id": "din976-threaded-rod",
+  "category": "Fasteners/Studs/Threaded Rod",
+  "standard": "DIN 976",
+  "generator": "stud",
+  "variant": "continuous",
+  "units": "mm",
+  "keyColumns": ["d", "l"],
+  "columns": [
+    { "name": "d", "param": "nominal_dia", "type": "length" },
+    { "name": "P", "param": "thread_pitch", "type": "length" },
+    { "name": "l", "param": "length", "type": "length" }
+  ],
+  "members": [
+    { "d": 6, "P": 1.0, "l": 1000 },
+    { "d": 8, "P": 1.25, "l": 1000 },
+    { "d": 10, "P": 1.5, "l": 1000 },
+    { "d": 12, "P": 1.75, "l": 1000 }
+  ]
+}

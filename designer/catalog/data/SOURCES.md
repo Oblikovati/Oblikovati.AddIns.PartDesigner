@@ -65,6 +65,24 @@ mid-range of the published min/max), in millimetres.
 - Verified/**corrected**: s (max) = 10/13/**17/19** (thin nuts keep the wider across-flats for
   M10/M12, unlike ISO 4032's 16/18; was 16/18), m (max) = 3.2/4.0/5.0/6.0 (matched).
 
+## Fasteners / Studs & threaded rod
+
+### `stud_din976.json` — DIN 976 (metric threaded rod / studding)
+- Source: fasteners.eu DIN 976 — <https://www.fasteners.eu/standards/DIN/976/>.
+- Continuous thread over the whole rod; `d`, `P` (coarse), `l` (stock length). Verbatim
+  (M6/M8/M10/M12): P = 1.0 / 1.25 / 1.5 / 1.75. Length `l` = 1000 mm (the standard 1 m stock
+  cut, as with `round_bar_iso1035`), not a per-size standard dimension.
+
+### `stud_din939.json` — DIN 939 (double-end stud, metal end ≈ 1.25 d)
+- Source: fasteners.eu DIN 939 — <https://www.fasteners.eu/standards/DIN/939/>, cross-checked
+  against Fuller Fasteners / Aspen / TorqBolt DIN 939 tables.
+- Columns: `d`, `P` (coarse), `l` (overall length), `b1` (metal-end thread length = 1.25 d),
+  `b2` (nut-end thread length). Verbatim (M6/M8/M10/M12): b1 = 7.5 / 10 / **12.5** / 15
+  (= 1.25 d; fasteners.eu tabulates M10 as a rounded 12, but the standard value is 12.5),
+  b2 = 18 / 22 / 26 / 30 (= 2 d + 6, the value for nominal length l ≤ 125 mm).
+- `l` = 40 / 50 / 60 / 70 mm are representative catalogue lengths (DIN 939 lists 12–200 mm per
+  size); the plain shank between the two threaded ends is l − b1 − b2, which stays positive.
+
 ## Structural
 
 ### `round_bar_iso1035.json` — ISO 1035 (hot-rolled round steel bar)

@@ -1,0 +1,22 @@
+{
+  "id": "din939-stud",
+  "category": "Fasteners/Studs/Double End",
+  "standard": "DIN 939",
+  "generator": "stud",
+  "variant": "double_end",
+  "units": "mm",
+  "keyColumns": ["d", "l"],
+  "columns": [
+    { "name": "d", "param": "nominal_dia", "type": "length" },
+    { "name": "P", "param": "thread_pitch", "type": "length" },
+    { "name": "l", "param": "length", "type": "length" },
+    { "name": "b1", "param": "metal_thread_length", "type": "length" },
+    { "name": "b2", "param": "nut_thread_length", "type": "length" }
+  ],
+  "members": [
+    { "d": 6, "P": 1.0, "l": 40, "b1": 7.5, "b2": 18 },
+    { "d": 8, "P": 1.25, "l": 50, "b1": 10, "b2": 22 },
+    { "d": 10, "P": 1.5, "l": 60, "b1": 12.5, "b2": 26 },
+    { "d": 12, "P": 1.75, "l": 70, "b1": 15, "b2": 30 }
+  ]
+}

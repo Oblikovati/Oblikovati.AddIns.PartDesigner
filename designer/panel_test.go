@@ -86,9 +86,9 @@ func TestSelectFamilyAndCategory(t *testing.T) {
 	e := NewEngine(newFakeHost())
 
 	// Filtering by the top-level category keeps the fastener families (2 hex bolts, 3 socket
-	// screws, 3 hex nuts, and 3 washers: DIN 125/ISO 7089 plain + DIN 127 spring).
+	// screws, 3 hex nuts, 3 washers, and 2 studs: DIN 976 rod + DIN 939 double-end).
 	e.applySelection(categoryControlID, "Fasteners")
-	if e.sel.category != "Fasteners" || len(e.familyOptions(e.sel)) != 11 {
+	if e.sel.category != "Fasteners" || len(e.familyOptions(e.sel)) != 13 {
 		t.Fatalf("category=Fasteners: cat=%q families=%v", e.sel.category, e.familyOptions(e.sel))
 	}
 
