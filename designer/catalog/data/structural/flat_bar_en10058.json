@@ -1,0 +1,21 @@
+{
+  "id": "en10058-flat-bar",
+  "category": "Structural/Bars/Flat",
+  "standard": "EN 10058",
+  "generator": "flat_bar",
+  "units": "mm",
+  "keyColumns": ["b", "a"],
+  "columns": [
+    { "name": "b", "param": "width", "type": "length" },
+    { "name": "a", "param": "thickness", "type": "length" },
+    { "name": "l", "param": "length", "type": "length" }
+  ],
+  "members": [
+    { "b": 20, "a": 5, "l": 6000 },
+    { "b": 25, "a": 5, "l": 6000 },
+    { "b": 30, "a": 6, "l": 6000 },
+    { "b": 40, "a": 8, "l": 6000 },
+    { "b": 50, "a": 8, "l": 6000 },
+    { "b": 60, "a": 10, "l": 6000 }
+  ]
+}

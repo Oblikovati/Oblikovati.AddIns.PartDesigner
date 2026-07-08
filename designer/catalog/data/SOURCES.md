@@ -88,3 +88,10 @@ mid-range of the published min/max), in millimetres.
 ### `round_bar_iso1035.json` — ISO 1035 (hot-rolled round steel bar)
 - Nominal preferred stock diameters (10/12/16/20/25 mm) per ISO 1035-1; length is a representative
   stock cut (1000 mm), not a per-size standard dimension.
+
+### `flat_bar_en10058.json` — EN 10058 (hot-rolled flat steel bar for general purposes)
+- Nominal width `b` and thickness `a` are drawn from the preferred nominal dimensions tabulated in
+  EN 10058-1 (widths 10–150 mm, thicknesses 3–60 mm); the six members (20×5, 25×5, 30×6, 40×8,
+  50×8, 60×10) are common commercially-stocked width×thickness combinations from that table.
+- Length is a representative mill/stock length (6000 mm), user-overridable at placement — EN 10058
+  does not fix a bar length, only the cross-section and its tolerances.

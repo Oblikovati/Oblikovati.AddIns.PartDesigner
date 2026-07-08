@@ -23,8 +23,8 @@ func TestStandardsAndFilters(t *testing.T) {
 		t.Fatalf("Load() error = %v", err)
 	}
 
-	if got := c.Standards(); !reflect.DeepEqual(got, []string{"DIN", "ISO"}) {
-		t.Errorf("Standards() = %v, want [DIN ISO]", got)
+	if got := c.Standards(); !reflect.DeepEqual(got, []string{"DIN", "EN", "ISO"}) {
+		t.Errorf("Standards() = %v, want [DIN EN ISO]", got)
 	}
 
 	iso := c.ByStandardBody("iso") // case-insensitive
@@ -60,8 +60,12 @@ func TestByCategoryPrefix(t *testing.T) {
 		t.Errorf("Bearings subtree = %v, want empty", ids(none))
 	}
 	structural := c.ByCategory(CategoryPath{"Structural"})
-	if !containsID(structural, "iso1035-round-bar") {
-		t.Errorf("Structural subtree = %v, want the round bar", ids(structural))
+	if !containsID(structural, "iso1035-round-bar") || !containsID(structural, "en10058-flat-bar") {
+		t.Errorf("Structural subtree = %v, want the round bar and flat bar", ids(structural))
+	}
+	bars := c.ByCategory(CategoryPath{"Structural", "Bars", "Flat"})
+	if len(bars) != 1 || !containsID(bars, "en10058-flat-bar") {
+		t.Errorf("Structural/Bars/Flat = %v, want just the EN 10058 flat bar", ids(bars))
 	}
 	// An empty prefix matches everything.
 	if got := c.ByCategory(nil); len(got) != c.Len() {
