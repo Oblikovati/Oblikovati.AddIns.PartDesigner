@@ -1,0 +1,20 @@
+{
+  "id": "din934-hex-nut",
+  "category": "Fasteners/Nuts/Hex",
+  "standard": "DIN 934",
+  "generator": "hex_nut",
+  "units": "mm",
+  "keyColumns": ["d"],
+  "columns": [
+    { "name": "d", "param": "nominal_dia", "type": "length" },
+    { "name": "P", "param": "thread_pitch", "type": "length" },
+    { "name": "s", "param": "across_flats", "type": "length" },
+    { "name": "m", "param": "nut_height", "type": "length" }
+  ],
+  "members": [
+    { "d": 6, "P": 1.0, "s": 10, "m": 5.0 },
+    { "d": 8, "P": 1.25, "s": 13, "m": 6.5 },
+    { "d": 10, "P": 1.5, "s": 17, "m": 8.0 },
+    { "d": 12, "P": 1.75, "s": 19, "m": 10.0 }
+  ]
+}
