@@ -95,3 +95,23 @@ mid-range of the published min/max), in millimetres.
   50×8, 60×10) are common commercially-stocked width×thickness combinations from that table.
 - Length is a representative mill/stock length (6000 mm), user-overridable at placement — EN 10058
   does not fix a bar length, only the cross-section and its tolerances.
+
+### `ipe_en10365.json`, `hea_en10365.json`, `heb_en10365.json` — EN 10365 (hot-rolled I / H sections)
+- Section dimensions h (height), b (flange width), tw (web thickness), tf (flange thickness) are
+  the nominal values tabulated in EN 10365:2017 for the IPE, HE A and HE B series (e.g. IPE 200 =
+  200/100/5.6/8.5; HE 200 B = 200/200/9.0/15.0). A representative subset of each series is included.
+- **Modelled sharp** (no root radius `r`): the generator builds a constant-thickness 12-vertex
+  I-outline. The EN root fillets (r ≈ 7–27 mm) are a deferred refinement — they add a small amount
+  of material at the web/flange junctions, so the extruded volume is marginally below the tabulated
+  sectional area × length. The overall depth, flange width and plate thicknesses are exact.
+- Length is a representative stock length (6000 mm), user-overridable.
+
+### `upn_en10279.json` — EN 10279 (hot-rolled taper-flange channels, UPN)
+- Section dimensions h, b, tw, tf are the nominal values tabulated in EN 10279:2000 for the UPN
+  series (e.g. UPN 200 = 200/75/8.5/11.5, where tf is the standard reference flange thickness). A
+  representative subset (UPN 80/100/160/200) is included.
+- **Modelled sharp, constant flange thickness**: the ~5 % (≈2.9°) inner-flange taper and the
+  root/toe radii of the real UPN section are deferred refinements. The section is symmetric about
+  its X axis with the web on the left; overall height, flange reach, web and flange thicknesses are
+  exact.
+- Length is a representative stock length (6000 mm), user-overridable.

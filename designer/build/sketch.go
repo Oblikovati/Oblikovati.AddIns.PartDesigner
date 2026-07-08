@@ -86,16 +86,9 @@ func (s *SketchContext) constrainCenteredRectangle(corners, edges []uint64, widt
 	if err := rectAxisConstraints(con, bl, br, tr, tl); err != nil {
 		return err
 	}
-	origin, err := s.b.api.Sketch().AddPoint(s.index, []float64{0, 0})
+	o, err := s.groundedOrigin()
 	if err != nil {
-		return fmt.Errorf("add rectangle centre point: %w", err)
-	}
-	if len(origin.PointIDs) < 1 {
-		return fmt.Errorf("rectangle centre point reply had no point id")
-	}
-	o := origin.PointIDs[0]
-	if _, err := con.Fix(o); err != nil {
-		return fmt.Errorf("fix rectangle centre: %w", err)
+		return err
 	}
 	return centeredRectangleDimensions(dim, o, bl, br, tl, bottom, left, widthExpr, heightExpr)
 }
@@ -109,10 +102,10 @@ func centeredRectangleDimensions(dim client.Dimension, o, bl, br, tl, bottom, le
 	if _, err := dim.Distance(bl, tl, heightExpr); err != nil {
 		return fmt.Errorf("dimension rectangle height %q: %w", heightExpr, err)
 	}
-	if _, err := dim.Offset(o, bottom, "("+heightExpr+") / 2"); err != nil {
+	if _, err := dim.Offset(o, bottom, half(heightExpr)); err != nil {
 		return fmt.Errorf("centre rectangle vertically: %w", err)
 	}
-	if _, err := dim.Offset(o, left, "("+widthExpr+") / 2"); err != nil {
+	if _, err := dim.Offset(o, left, half(widthExpr)); err != nil {
 		return fmt.Errorf("centre rectangle horizontally: %w", err)
 	}
 	return nil

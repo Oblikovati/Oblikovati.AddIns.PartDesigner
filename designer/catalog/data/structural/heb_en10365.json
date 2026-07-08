@@ -1,0 +1,21 @@
+{
+  "id": "heb-en10365",
+  "category": "Structural/Beams/HE B",
+  "standard": "EN 10365",
+  "generator": "i_beam",
+  "units": "mm",
+  "keyColumns": ["designation"],
+  "columns": [
+    { "name": "designation", "param": "designation", "type": "text" },
+    { "name": "h", "param": "height", "type": "length" },
+    { "name": "b", "param": "flange_width", "type": "length" },
+    { "name": "tw", "param": "web_thickness", "type": "length" },
+    { "name": "tf", "param": "flange_thickness", "type": "length" },
+    { "name": "l", "param": "length", "type": "length" }
+  ],
+  "members": [
+    { "designation": "HE 100 B", "h": 100, "b": 100, "tw": 6.0, "tf": 10.0, "l": 6000 },
+    { "designation": "HE 200 B", "h": 200, "b": 200, "tw": 9.0, "tf": 15.0, "l": 6000 },
+    { "designation": "HE 300 B", "h": 300, "b": 300, "tw": 11.0, "tf": 19.0, "l": 6000 }
+  ]
+}

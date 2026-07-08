@@ -1,0 +1,22 @@
+{
+  "id": "upn-en10279",
+  "category": "Structural/Channels/UPN",
+  "standard": "EN 10279",
+  "generator": "channel",
+  "units": "mm",
+  "keyColumns": ["designation"],
+  "columns": [
+    { "name": "designation", "param": "designation", "type": "text" },
+    { "name": "h", "param": "height", "type": "length" },
+    { "name": "b", "param": "flange_width", "type": "length" },
+    { "name": "tw", "param": "web_thickness", "type": "length" },
+    { "name": "tf", "param": "flange_thickness", "type": "length" },
+    { "name": "l", "param": "length", "type": "length" }
+  ],
+  "members": [
+    { "designation": "UPN 80", "h": 80, "b": 45, "tw": 6.0, "tf": 8.0, "l": 6000 },
+    { "designation": "UPN 100", "h": 100, "b": 50, "tw": 6.0, "tf": 8.5, "l": 6000 },
+    { "designation": "UPN 160", "h": 160, "b": 65, "tw": 7.5, "tf": 10.5, "l": 6000 },
+    { "designation": "UPN 200", "h": 200, "b": 75, "tw": 8.5, "tf": 11.5, "l": 6000 }
+  ]
+}
