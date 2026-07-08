@@ -59,6 +59,10 @@ func TestByCategoryPrefix(t *testing.T) {
 	if !containsID(bolts, "iso4017-hex-bolt") || !containsID(bolts, "din933-hex-bolt") {
 		t.Errorf("Fasteners/Bolts = %v, want both hex bolts", ids(bolts))
 	}
+	keys := c.ByCategory(CategoryPath{"Shaft Parts", "Keys"})
+	if !containsID(keys, "din6885-parallel-key") {
+		t.Errorf("Shaft Parts/Keys = %v, want the DIN 6885 parallel key", ids(keys))
+	}
 	none := c.ByCategory(CategoryPath{"Bearings"})
 	if len(none) != 0 {
 		t.Errorf("Bearings subtree = %v, want empty", ids(none))

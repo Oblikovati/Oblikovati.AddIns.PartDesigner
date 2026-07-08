@@ -1,0 +1,21 @@
+{
+  "id": "din6885-parallel-key",
+  "category": "Shaft Parts/Keys/Parallel",
+  "standard": "DIN 6885",
+  "generator": "key",
+  "units": "mm",
+  "keyColumns": ["b", "h", "l"],
+  "columns": [
+    { "name": "b", "param": "width", "type": "length" },
+    { "name": "h", "param": "height", "type": "length" },
+    { "name": "l", "param": "length", "type": "length" }
+  ],
+  "members": [
+    { "b": 6, "h": 6, "l": 20 },
+    { "b": 8, "h": 7, "l": 25 },
+    { "b": 10, "h": 8, "l": 32 },
+    { "b": 12, "h": 8, "l": 40 },
+    { "b": 16, "h": 10, "l": 50 },
+    { "b": 20, "h": 12, "l": 63 }
+  ]
+}

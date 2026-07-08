@@ -165,6 +165,21 @@ func (b *PartBuilder) Loft(bottom, top *SketchContext, operation string) error {
 	return nil
 }
 
+// Revolve sweeps the sketch's first profile about the world Z axis by angleExpr (a parameter name
+// or formula; an angle just under a full turn leaves the split gap of a retaining ring). It is how
+// a turned/rotationally-symmetric part is built — a flat split ring here, and the bearing races
+// later — from a cross-section revolved about the axis, so the part re-drives with its parameters.
+func (b *PartBuilder) Revolve(sk *SketchContext, angleExpr, operation string) error {
+	_, err := client.AddFeature(b.api.Features(), featureargs.Revolve{
+		SketchIndex: sk.index, ProfileIndex: 0, AxisRef: "origin/axis/z",
+		Angle: angleExpr, Operation: operation,
+	})
+	if err != nil {
+		return fmt.Errorf("revolve sketch %d by %q (%s): %w", sk.index, angleExpr, operation, err)
+	}
+	return nil
+}
+
 // Coil sweeps the sketch's first profile along a helix about the world Z axis — how a helical
 // spring washer is modelled. revolutions just under one turn leaves the split gap; the coil's
 // height (the total axial rise) offsets the two ends, giving the free height a DIN 127 spring

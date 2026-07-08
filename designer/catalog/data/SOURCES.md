@@ -149,3 +149,25 @@ mid-range of the published min/max), in millimetres.
   external corner radii of the cold-formed section are deferred (sharp corners). Outer size, bore
   and wall thickness are exact. CHS outer diameters follow the standard steel-tube OD series.
 - Length is a representative stock length (6000 mm), user-overridable.
+
+## Shaft Parts
+
+### `key_din6885.json` — DIN 6885 (parallel keys)
+- Cross-section b × h from DIN 6885-1 (e.g. 8×7, 12×8, 20×12) with a representative length l from the
+  standard length series. The section (width × height) and length are exact.
+- **Modelled square-ended** (DIN 6885 Form B): the Form A round ends and the gib head (DIN 6887) are
+  a tracked refinement. The key's cross-section is centred on the part origin.
+
+### `dowel_iso2338.json` — ISO 2338 (cylindrical dowel pins)
+- Diameter d and length l from the ISO 2338 preferred sizes (e.g. 6 m6 × 30). Diameter and length
+  are exact. The end lead-in chamfers, and the clevis-pin and cotter/split-pin forms, are a tracked
+  refinement (the dowel is modelled as a plain precise cylinder).
+
+### `circlip_din471.json`, `circlip_din472.json` — DIN 471 / DIN 472 (retaining rings)
+- Keyed by nominal shaft (DIN 471, external) or bore (DIN 472, internal) diameter, with ring
+  thickness s from the standard (e.g. shaft 20 → s = 1.2). Modelled as a flat split ring — the
+  rectangular radial section (inner_dia/2 → outer_dia/2 × thickness) revolved through 330°, leaving
+  the split gap.
+- **Representational** (per the milestone plan): the thickness and nominal size are grounded in the
+  standard; the ring's radial width/outer diameter are representative proportions and the lug ears
+  with their assembly-plier holes are not modelled.

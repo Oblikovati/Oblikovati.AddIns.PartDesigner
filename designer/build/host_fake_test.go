@@ -36,6 +36,7 @@ type fakeHost struct {
 	threads      []featureargs.Thread       // every cosmetic/cut thread, in order
 	lofts        []featureargs.Loft         // every loft, in order
 	coils        []featureargs.Coil         // every coil, in order
+	revolves     []featureargs.Revolve      // every revolve, in order
 	workPlanes   []wire.CreateWorkPlaneArgs // every work plane created, in order
 }
 
@@ -163,6 +164,10 @@ func (h *fakeHost) featureReply(req []byte) ([]byte, error) {
 		var cl featureargs.Coil
 		_ = json.Unmarshal(args.Args, &cl)
 		h.coils = append(h.coils, cl)
+	case featureargs.KindRevolve:
+		var rv featureargs.Revolve
+		_ = json.Unmarshal(args.Args, &rv)
+		h.revolves = append(h.revolves, rv)
 	}
 	return []byte("{}"), nil
 }
