@@ -23,8 +23,12 @@ func TestStandardsAndFilters(t *testing.T) {
 		t.Fatalf("Load() error = %v", err)
 	}
 
-	if got := c.Standards(); !reflect.DeepEqual(got, []string{"DIN", "EN", "ISO"}) {
-		t.Errorf("Standards() = %v, want [DIN EN ISO]", got)
+	if got := c.Standards(); !reflect.DeepEqual(got, []string{"AISC", "DIN", "EN", "ISO"}) {
+		t.Errorf("Standards() = %v, want [AISC DIN EN ISO]", got)
+	}
+	aisc := c.ByStandardBody("aisc")
+	if !containsID(aisc, "w-aisc") || !containsID(aisc, "c-aisc") {
+		t.Errorf("ByStandardBody(aisc) = %v, want the AISC W and C shapes", ids(aisc))
 	}
 
 	iso := c.ByStandardBody("iso") // case-insensitive
@@ -68,12 +72,14 @@ func TestByCategoryPrefix(t *testing.T) {
 		t.Errorf("Structural/Bars/Flat = %v, want just the EN 10058 flat bar", ids(bars))
 	}
 	beams := c.ByCategory(CategoryPath{"Structural", "Beams"})
-	if !containsID(beams, "ipe-en10365") || !containsID(beams, "hea-en10365") || !containsID(beams, "heb-en10365") {
-		t.Errorf("Structural/Beams = %v, want the IPE, HE A and HE B series", ids(beams))
+	for _, id := range []string{"ipe-en10365", "hea-en10365", "heb-en10365", "w-aisc"} {
+		if !containsID(beams, id) {
+			t.Errorf("Structural/Beams = %v, want the IPE/HE A/HE B and AISC W series (missing %s)", ids(beams), id)
+		}
 	}
 	channels := c.ByCategory(CategoryPath{"Structural", "Channels"})
-	if len(channels) != 1 || !containsID(channels, "upn-en10279") {
-		t.Errorf("Structural/Channels = %v, want just the UPN channel", ids(channels))
+	if !containsID(channels, "upn-en10279") || !containsID(channels, "c-aisc") {
+		t.Errorf("Structural/Channels = %v, want the UPN and AISC C channels", ids(channels))
 	}
 	// An empty prefix matches everything.
 	if got := c.ByCategory(nil); len(got) != c.Len() {

@@ -3,6 +3,7 @@
 package catalog
 
 import (
+	"sort"
 	"strings"
 	"testing"
 )
@@ -165,7 +166,10 @@ func TestFamiliesOrdered(t *testing.T) {
 		t.Fatalf("Load() error = %v", err)
 	}
 	got := ids(c.Families())
-	if len(got) < 2 || got[0] != "din125-washer" {
-		t.Errorf("Families() = %v, want id-sorted with din125-washer first", got)
+	if len(got) < 2 {
+		t.Fatalf("Families() = %v, want at least two families", got)
+	}
+	if !sort.StringsAreSorted(got) {
+		t.Errorf("Families() = %v, want id-sorted (deterministic order)", got)
 	}
 }

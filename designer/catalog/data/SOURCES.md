@@ -106,6 +106,15 @@ mid-range of the published min/max), in millimetres.
   sectional area × length. The overall depth, flange width and plate thicknesses are exact.
 - Length is a representative stock length (6000 mm), user-overridable.
 
+### `w_aisc.json`, `c_aisc.json` — AISC (US wide-flange W and American Standard channel C shapes)
+- Section dimensions d (depth), bf (flange width), tw (web thickness), tf (flange thickness) are the
+  nominal values from the **AISC Shapes Database v15.0** (Steel Construction Manual), in inches — e.g.
+  W8×31 = 8.00/8.00/0.285/0.435; C10×15.3 = 10.0/2.60/0.240/0.436. A representative subset is included.
+- **W shapes** have parallel flanges, so the constant-thickness model is dimensionally exact (only the
+  web/flange root fillets are omitted). **C shapes** have a tapered inner flange face; tf is the AISC
+  average flange thickness and the taper + root/toe radii are deferred (as with the EN UPN channel).
+- Length is a representative stock length (240 in = 20 ft), user-overridable.
+
 ### `upn_en10279.json` — EN 10279 (hot-rolled taper-flange channels, UPN)
 - Section dimensions h, b, tw, tf are the nominal values tabulated in EN 10279:2000 for the UPN
   series (e.g. UPN 200 = 200/75/8.5/11.5, where tf is the standard reference flange thickness). A
