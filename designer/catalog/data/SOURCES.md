@@ -149,3 +149,11 @@ mid-range of the published min/max), in millimetres.
   external corner radii of the cold-formed section are deferred (sharp corners). Outer size, bore
   and wall thickness are exact. CHS outer diameters follow the standard steel-tube OD series.
 - Length is a representative stock length (6000 mm), user-overridable.
+
+## Shaft Parts
+
+### `key_din6885.json` — DIN 6885 (parallel keys)
+- Cross-section b × h from DIN 6885-1 (e.g. 8×7, 12×8, 20×12) with a representative length l from the
+  standard length series. The section (width × height) and length are exact.
+- **Modelled square-ended** (DIN 6885 Form B): the Form A round ends and the gib head (DIN 6887) are
+  a tracked refinement. The key's cross-section is centred on the part origin.
