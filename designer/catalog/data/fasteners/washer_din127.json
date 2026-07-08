@@ -1,0 +1,22 @@
+{
+  "id": "din127-washer",
+  "category": "Fasteners/Washers/Spring",
+  "standard": "DIN 127",
+  "generator": "washer",
+  "variant": "spring",
+  "units": "mm",
+  "keyColumns": ["size"],
+  "columns": [
+    { "name": "size", "param": "designation", "type": "text" },
+    { "name": "d1", "param": "inner_dia", "type": "length" },
+    { "name": "d2", "param": "outer_dia", "type": "length" },
+    { "name": "s", "param": "thickness", "type": "length" },
+    { "name": "H", "param": "free_height", "type": "length" }
+  ],
+  "members": [
+    { "size": "M6", "d1": 6.4, "d2": 11.8, "s": 1.6, "H": 3.5 },
+    { "size": "M8", "d1": 8.1, "d2": 14.8, "s": 2.0, "H": 4.35 },
+    { "size": "M10", "d1": 10.2, "d2": 18.1, "s": 2.2, "H": 4.8 },
+    { "size": "M12", "d1": 12.2, "d2": 21.1, "s": 2.5, "H": 5.45 }
+  ]
+}

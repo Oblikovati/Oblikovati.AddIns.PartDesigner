@@ -1,0 +1,21 @@
+{
+  "id": "din125-washer",
+  "category": "Fasteners/Washers/Plain",
+  "standard": "DIN 125",
+  "generator": "washer",
+  "variant": "plain",
+  "units": "mm",
+  "keyColumns": ["size"],
+  "columns": [
+    { "name": "size", "param": "designation", "type": "text" },
+    { "name": "d1", "param": "inner_dia", "type": "length" },
+    { "name": "d2", "param": "outer_dia", "type": "length" },
+    { "name": "h", "param": "thickness", "type": "length" }
+  ],
+  "members": [
+    { "size": "M6", "d1": 6.4, "d2": 12, "h": 1.6 },
+    { "size": "M8", "d1": 8.4, "d2": 16, "h": 1.6 },
+    { "size": "M10", "d1": 10.5, "d2": 20, "h": 2.0 },
+    { "size": "M12", "d1": 13, "d2": 24, "h": 2.5 }
+  ]
+}

@@ -165,6 +165,22 @@ func (b *PartBuilder) Loft(bottom, top *SketchContext, operation string) error {
 	return nil
 }
 
+// Coil sweeps the sketch's first profile along a helix about the world Z axis — how a helical
+// spring washer is modelled. revolutions just under one turn leaves the split gap; the coil's
+// height (the total axial rise) offsets the two ends, giving the free height a DIN 127 spring
+// lock washer stands at. Height and revolutions are expressions, so the coil re-drives with the
+// size (two of pitch/revolutions/height fix the helix).
+func (b *PartBuilder) Coil(sk *SketchContext, heightExpr, revolutionsExpr string) error {
+	_, err := client.AddFeature(b.api.Features(), featureargs.Coil{
+		SketchIndex: sk.index, ProfileIndex: 0, AxisRef: "origin/axis/z",
+		Height: heightExpr, Revolutions: revolutionsExpr,
+	})
+	if err != nil {
+		return fmt.Errorf("coil sketch %d (height %q, revolutions %q): %w", sk.index, heightExpr, revolutionsExpr, err)
+	}
+	return nil
+}
+
 // CosmeticThread tags a cylindrical face (by reference key) with a representational, non-cut
 // thread of the given designation (e.g. "M8x1.25") — the Content-Center convention for
 // standard fasteners, which show thread lines without modelling the helical cut.
