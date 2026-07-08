@@ -1,0 +1,22 @@
+{
+  "id": "com.oblikovati.part-designer",
+  "displayName": "Oblikovati Part Designer",
+  "version": "0.1.0",
+  "description": "Oblikovati's procedural Content Center: a browsable library of standardized machine parts (fasteners, structural shapes, shaft parts, bearings) across ISO/DIN/ANSI. Unlike a template-file catalogue, every part is generated procedurally from curated per-standard dimension tables, so a placed part is a real, fully-constrained (DOF-0) parametric Oblikovati part exposing and constrained by its parameters. Places a standalone Part document and, when an assembly is active, an occurrence into it.",
+  "license": "GPL-2.0-only",
+  "sourceRepo": "https://github.com/Oblikovati/Oblikovati.AddIns.PartDesigner",
+  "apiCompat": "0.108",
+  "capabilities": [
+    "commands",
+    "documents",
+    "parameters",
+    "model",
+    "sketch",
+    "features",
+    "body",
+    "materials",
+    "assembly",
+    "attributes",
+    "dockableWindows"
+  ]
+}
