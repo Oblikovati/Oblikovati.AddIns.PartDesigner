@@ -1,0 +1,22 @@
+{
+  "id": "angle-unequal-en10056",
+  "category": "Structural/Angles/L Unequal",
+  "standard": "EN 10056",
+  "generator": "angle",
+  "units": "mm",
+  "keyColumns": ["designation"],
+  "columns": [
+    { "name": "designation", "param": "designation", "type": "text" },
+    { "name": "a", "param": "leg_a", "type": "length" },
+    { "name": "b", "param": "leg_b", "type": "length" },
+    { "name": "t", "param": "thickness", "type": "length" },
+    { "name": "l", "param": "length", "type": "length" }
+  ],
+  "members": [
+    { "designation": "L 60x40x5", "a": 60, "b": 40, "t": 5, "l": 6000 },
+    { "designation": "L 65x50x5", "a": 65, "b": 50, "t": 5, "l": 6000 },
+    { "designation": "L 75x50x7", "a": 75, "b": 50, "t": 7, "l": 6000 },
+    { "designation": "L 100x65x8", "a": 100, "b": 65, "t": 8, "l": 6000 },
+    { "designation": "L 100x75x10", "a": 100, "b": 75, "t": 10, "l": 6000 }
+  ]
+}

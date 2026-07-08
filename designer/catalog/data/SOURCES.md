@@ -124,3 +124,28 @@ mid-range of the published min/max), in millimetres.
   its X axis with the web on the left; overall height, flange reach, web and flange thicknesses are
   exact.
 - Length is a representative stock length (6000 mm), user-overridable.
+
+### `angle_equal_en10056.json`, `angle_unequal_en10056.json` — EN 10056 (hot-rolled angles, L)
+- Leg lengths a, b and thickness t are the nominal values tabulated in EN 10056-1 for equal-leg
+  (a = b, e.g. L 60×60×6) and unequal-leg (e.g. L 100×65×8) angles. A representative subset of each
+  is included.
+- **Modelled sharp**: the root radius r1 and toe radii r2 are deferred; the leg lengths and
+  thickness are exact. The heel (outer corner) sits at the part origin.
+- Length is a representative stock length (6000 mm), user-overridable.
+
+### `tee_en10055.json` — EN 10055 (hot-rolled equal-flange tees, T)
+- Height h (= flange width b) and thickness (web = flange = s) are the nominal values tabulated in
+  EN 10055 for the equal-flange tee series (e.g. T 50 = 50/50/6/6). A representative subset
+  (T 40…T 80) is included.
+- **Modelled sharp**: the root radius r1 and toe radius r2 are deferred; the depth, flange width
+  and thicknesses are exact. The section is symmetric about the Y axis (flange on top).
+- Length is a representative stock length (6000 mm), user-overridable.
+
+### `shs_en10219.json`, `rhs_en10219.json`, `chs_en10219.json` — EN 10219 (cold-formed hollow sections)
+- Outer size (b×h for SHS/RHS, outer diameter d for CHS) and wall thickness t are the nominal
+  values tabulated in EN 10219-2 for square (e.g. SHS 100×100×5), rectangular (e.g. RHS 120×60×5)
+  and circular (e.g. CHS 88.9×4) hollow sections. A representative subset of each is included.
+- Built as a **tube** (outer prism minus a concentric inner prism inset by the wall thickness); the
+  external corner radii of the cold-formed section are deferred (sharp corners). Outer size, bore
+  and wall thickness are exact. CHS outer diameters follow the standard steel-tube OD series.
+- Length is a representative stock length (6000 mm), user-overridable.

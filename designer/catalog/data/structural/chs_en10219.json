@@ -1,0 +1,21 @@
+{
+  "id": "chs-en10219",
+  "category": "Structural/Hollow Sections/CHS",
+  "standard": "EN 10219",
+  "generator": "hollow_round",
+  "units": "mm",
+  "keyColumns": ["designation"],
+  "columns": [
+    { "name": "designation", "param": "designation", "type": "text" },
+    { "name": "d", "param": "outer_dia", "type": "length" },
+    { "name": "t", "param": "thickness", "type": "length" },
+    { "name": "l", "param": "length", "type": "length" }
+  ],
+  "members": [
+    { "designation": "CHS 42.4x3", "d": 42.4, "t": 3.0, "l": 6000 },
+    { "designation": "CHS 48.3x3", "d": 48.3, "t": 3.0, "l": 6000 },
+    { "designation": "CHS 60.3x4", "d": 60.3, "t": 4.0, "l": 6000 },
+    { "designation": "CHS 76.1x4", "d": 76.1, "t": 4.0, "l": 6000 },
+    { "designation": "CHS 88.9x5", "d": 88.9, "t": 5.0, "l": 6000 }
+  ]
+}

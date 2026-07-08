@@ -1,0 +1,22 @@
+{
+  "id": "angle-equal-en10056",
+  "category": "Structural/Angles/L Equal",
+  "standard": "EN 10056",
+  "generator": "angle",
+  "units": "mm",
+  "keyColumns": ["designation"],
+  "columns": [
+    { "name": "designation", "param": "designation", "type": "text" },
+    { "name": "a", "param": "leg_a", "type": "length" },
+    { "name": "b", "param": "leg_b", "type": "length" },
+    { "name": "t", "param": "thickness", "type": "length" },
+    { "name": "l", "param": "length", "type": "length" }
+  ],
+  "members": [
+    { "designation": "L 40x40x4", "a": 40, "b": 40, "t": 4, "l": 6000 },
+    { "designation": "L 50x50x5", "a": 50, "b": 50, "t": 5, "l": 6000 },
+    { "designation": "L 60x60x6", "a": 60, "b": 60, "t": 6, "l": 6000 },
+    { "designation": "L 70x70x7", "a": 70, "b": 70, "t": 7, "l": 6000 },
+    { "designation": "L 80x80x8", "a": 80, "b": 80, "t": 8, "l": 6000 }
+  ]
+}
