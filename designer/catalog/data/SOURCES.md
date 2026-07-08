@@ -29,12 +29,44 @@ mid-range of the published min/max), in millimetres.
 - Dimensionally identical to ISO 7089 for these sizes (ISO 7089 supersedes DIN 125 A and
   fasteners.eu tabulates DIN 125 under the ISO 7089 entry). Same values as `washer_iso7089.json`.
 
-## To verify (grounded from memory in earlier PRs — re-audit against official sources)
+## Fasteners / Bolts & screws
 
-The fastener families below were populated before this provenance rule and should be
-re-verified against official standard tables:
+### `hex_bolt_iso4017.json` / `hex_bolt_din933.json` — ISO 4017 / DIN 933 (fully-threaded hex screw)
+- Source: fasteners.eu ISO 4017 — <https://www.fasteners.eu/standards/ISO/4017/> (the site tabulates
+  DIN 933 and ISO 4017 together; the two are dimensionally identical).
+- Columns: `s` (across flats), `k` (head height), `P` (coarse pitch). Verified (M6/M8/M10/M12):
+  s = 10/13/16/18, k = 4.0/5.3/6.4/7.5, P = 1.0/1.25/1.5/1.75. Matched — no change.
+- `l` (length) and `b` (thread length) are representative example lengths (30/40/50/60), fully
+  threaded so b = l; not fixed by the standard per diameter.
 
-- `hex_bolt_*.json` (ISO 4017 / DIN 933)
-- `socket_screw_*.json` (ISO 4762 / DIN 912 / ISO 10642)
-- `hex_nut_*.json` (ISO 4032 / DIN 934 / ISO 4035)
-- `round_bar_*.json` (ISO 1035 stock)
+### `socket_screw_iso4762.json` / `socket_screw_din912.json` — ISO 4762 / DIN 912 (socket cap screw)
+- Source: fasteners.eu ISO 4762 — <https://www.fasteners.eu/standards/ISO/4762/> (DIN 912 identical).
+- Verified: dk = 10/13/16/18, k = 6/8/10/12, socket s = 5/6/8/10, socket depth t = 3/4/5/6. Matched.
+
+### `socket_screw_iso10642.json` — ISO 10642 (countersunk socket cap screw)
+- Source: fasteners.eu ISO 10642 — <https://www.fasteners.eu/standards/ISO/10642/>.
+- Verified/**corrected**: dk (nominal=max) = 12/16/20/24 (was 12.6/17.3 for M6/M8 — those were the
+  theoretical sharp-corner dk); k = 3.3/4.4/5.5/6.5; socket s = 4/5/6/8; socket depth t (nominal=max)
+  = 2.5/3.5/4.4/4.6 (was 2.0/2.6/3.0/3.5).
+
+## Fasteners / Nuts
+
+### `hex_nut_iso4032.json` — ISO 4032 (hexagon nut, style 1)
+- Source: fasteners.eu ISO 4032 — <https://www.fasteners.eu/standards/ISO/4032/>.
+- Verified: s (max) = 10/13/16/18, m (max) = 5.2/6.8/8.4/10.8. Matched — no change.
+
+### `hex_nut_din934.json` — DIN 934 (hexagon nut)
+- Source: fasteners.eu DIN 934 — <https://www.fasteners.eu/standards/din/934/>.
+- **Corrected** to the current harmonized values (modern DIN 934 = ISO 4032): s = 10/13/16/18
+  (was 17/19 for M10/M12), m = 5.2/6.8/8.4/10.8 (was 5.0/6.5/8.0/10.0, the older DIN series).
+
+### `hex_nut_iso4035.json` — ISO 4035 (hexagon thin nut, chamfered)
+- Source: fasteners.eu ISO 4035 — <https://www.fasteners.eu/standards/ISO/4035/>.
+- Verified/**corrected**: s (max) = 10/13/**17/19** (thin nuts keep the wider across-flats for
+  M10/M12, unlike ISO 4032's 16/18; was 16/18), m (max) = 3.2/4.0/5.0/6.0 (matched).
+
+## Structural
+
+### `round_bar_iso1035.json` — ISO 1035 (hot-rolled round steel bar)
+- Nominal preferred stock diameters (10/12/16/20/25 mm) per ISO 1035-1; length is a representative
+  stock cut (1000 mm), not a per-size standard dimension.
