@@ -8,12 +8,13 @@ import (
 	"oblikovati.org/part-designer/designer/catalog"
 )
 
-// panelState is the panel's current cascading selection: two filters (a top-level category
-// and a standards body, empty = "All") narrow the Part list, and a chosen family + member
-// (size) identify what Place builds.
+// panelState is the panel's current cascading selection: three filters (a top-level category, a
+// standards body — empty = "All" — and a free-text search) narrow the Part list, and a chosen
+// family + member (size) identify what Place builds.
 type panelState struct {
 	category  string // top-level category segment; "" = all
 	standard  string // standards body (ISO/DIN/ANSI); "" = all
+	search    string // free-text query over family name and size; "" = no search
 	familyID  string
 	memberKey string
 }
@@ -30,6 +31,8 @@ func (e *Engine) applySelection(controlID, value string) {
 		e.sel.category = clearAll(value)
 	case standardControlID:
 		e.sel.standard = clearAll(value)
+	case searchControlID:
+		e.sel.search = strings.TrimSpace(value)
 	case familyControlID:
 		if f := e.familyByLabel(e.sel, value); f != nil {
 			e.sel.familyID = f.ID
@@ -50,7 +53,7 @@ func (e *Engine) applySelection(controlID, value string) {
 // never shows a stale or impossible choice.
 func (e *Engine) reconcile(sel panelState) panelState {
 	wantMember := sel.memberKey // capture before the reset below
-	fam := pickFamily(e.filteredFamilies(sel.category, sel.standard), sel.familyID)
+	fam := pickFamily(e.filteredFamilies(sel), sel.familyID)
 	sel.familyID, sel.memberKey = "", ""
 	if fam != nil {
 		sel.familyID = fam.ID
@@ -62,18 +65,22 @@ func (e *Engine) reconcile(sel panelState) panelState {
 // defaultSelection is the initial selection: no filters, the first family + its first size.
 func (e *Engine) defaultSelection() panelState { return e.reconcile(panelState{}) }
 
-// filteredFamilies returns the families matching both filters (empty filter matches all), in
-// catalogue order.
-func (e *Engine) filteredFamilies(category, standard string) []*catalog.Family {
+// filteredFamilies returns the families matching all three filters — top-level category, standards
+// body and free-text search (an empty filter matches all) — in catalogue order.
+func (e *Engine) filteredFamilies(sel panelState) []*catalog.Family {
 	if e.catalog == nil {
 		return nil
 	}
+	query := strings.ToLower(sel.search)
 	var out []*catalog.Family
 	for _, f := range e.catalog.Families() {
-		if category != "" && (len(f.Category) == 0 || f.Category[0] != category) {
+		if sel.category != "" && (len(f.Category) == 0 || f.Category[0] != sel.category) {
 			continue
 		}
-		if standard != "" && f.Body() != standard {
+		if sel.standard != "" && f.Body() != sel.standard {
+			continue
+		}
+		if !f.Matches(query) {
 			continue
 		}
 		out = append(out, f)
@@ -91,7 +98,7 @@ func (e *Engine) family(id string) (*catalog.Family, bool) {
 
 // familyByLabel finds a filtered family by its display label.
 func (e *Engine) familyByLabel(sel panelState, label string) *catalog.Family {
-	for _, f := range e.filteredFamilies(sel.category, sel.standard) {
+	for _, f := range e.filteredFamilies(sel) {
 		if familyLabel(f) == label {
 			return f
 		}
