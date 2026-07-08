@@ -50,6 +50,41 @@ func (s *SketchContext) constrainRingSection(p, e []uint64, innerDia, outerDia, 
 	return nil
 }
 
+// GroundedOffsetCircle adds a circle whose centre sits on the +X axis at centreRadiusExpr from the
+// grounded origin, with diameter diameterExpr — the profile a cylindrical roller is extruded from
+// (a cylinder standing at the pitch radius, its axis parallel to the bearing axis). It is fully
+// constrained (DOF 0): the centre is levelled with the axis and placed by a distance dimension, and
+// the diameter dimension sizes it, so both position and size re-drive with the parameters. Unlike
+// GroundedCircle (centre pinned at a literal) the centre here is parameter-placed, so the roller
+// tracks the pitch circle.
+func (s *SketchContext) GroundedOffsetCircle(centreRadiusExpr, diameterExpr string) error {
+	const cx = 5.0 // seed centre radius (cm); the distance dimension drives the real value
+	sk := s.b.api.Sketch()
+	res, err := sk.AddCircleByCenterRadius(s.index, []float64{cx, 0}, "("+diameterExpr+")/2", false)
+	if err != nil {
+		return fmt.Errorf("add offset circle: %w", err)
+	}
+	if len(res.PointIDs) == 0 {
+		return fmt.Errorf("offset circle returned no centre point (entity %d)", res.EntityID)
+	}
+	centre := res.PointIDs[0]
+	o, err := s.groundedOrigin()
+	if err != nil {
+		return err
+	}
+	con, dim := sk.Constrain(s.index), sk.Dimension(s.index)
+	if _, err := con.Horizontal(o, centre); err != nil {
+		return fmt.Errorf("level offset circle with axis: %w", err)
+	}
+	if _, err := dim.Distance(o, centre, half(centreRadiusExpr)); err != nil {
+		return fmt.Errorf("place offset circle at pitch radius: %w", err)
+	}
+	if _, err := dim.Diameter(res.EntityID, diameterExpr); err != nil {
+		return fmt.Errorf("dimension offset circle diameter %q: %w", diameterExpr, err)
+	}
+	return nil
+}
+
 // GroundedBallSection builds the half-disk a bearing ball is revolved from: a semicircular arc of
 // diameter diameterExpr centred on the X axis at radius centreRadiusExpr from the origin, bulging
 // to +Y, closed by its diameter line back along the X axis. Revolved 360° about the X axis (which

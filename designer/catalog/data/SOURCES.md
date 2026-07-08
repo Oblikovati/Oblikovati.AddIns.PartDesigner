@@ -186,3 +186,28 @@ mid-range of the published min/max), in millimetres.
   radial gap (ball ≈ 0.3·(D−d); race faces inset ≈ 0.21·(D−d) from the pitch circle), so the whole
   bearing re-drives with the size. Race grooves, cage and seals are a tracked refinement; the balls
   sit as solids on the pitch circle between two solid annular rings.
+
+### `roller_bearing_iso15.json` — ISO 15 (cylindrical roller bearings, NU 2-series)
+- Bore d, outer diameter D and width B are the boundary dimensions tabulated in ISO 15 for the
+  NU 2-series cylindrical roller bearings (e.g. NU205 → 25 × 52 × 15). These three per member are
+  exact. The **roller count Z** is a representative value (ISO 15 tabulates only boundary
+  dimensions), driving the circular pattern of the roller complement.
+- **Representational**: the pitch-circle diameter, roller diameter (≈ 0.3·(D−d)), roller length
+  (≈ 0.8·B) and the two race diameters are derived parameters, so the bearing re-drives with the
+  size. The rollers are straight cylinders standing on the pitch circle with their axes parallel to
+  the bearing axis; roller-end chamfers, the cage and the ring guide flanges are a tracked refinement.
+- The **tapered-roller** (ISO 355 cone/cup + angled frustum rollers) and **thrust** (ISO 104 two flat
+  washer races + balls) bearing variants are a tracked refinement: they need cone rings and off-plane
+  rolling elements. The two rolling-bearing families shipped (deep-groove ball, cylindrical roller)
+  and the plain bush cover the "rolling elements patterned by parameter" and "plain bush id/od/length"
+  acceptance criteria at the milestone's representational fidelity.
+
+## Plain Bearings
+
+### `plain_bush_iso4379.json` — ISO 4379 (cylindrical sleeve bushes)
+- Bore d, outside diameter D and length L follow the ISO 4379 dimension series for cylindrical
+  plain-bearing bushes (e.g. 20 × 26 × 20). Bore, outside diameter and length are exact; a
+  representative subset of the series is included.
+- Built as a plain concentric sleeve (the tube path: outside diameter as a new solid, bore cut
+  through the full length). The flanged-bush variant and the wrapped-bush split seam are a tracked
+  refinement — this is the solid cylindrical bush.

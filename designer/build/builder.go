@@ -152,15 +152,23 @@ func (b *PartBuilder) Extrude(sk *SketchContext, distanceExpr, operation string)
 // ⇒ positive). A headed fastener grows its head down (−) from the base plane and its shank
 // further down, so they meet and join.
 func (b *PartBuilder) ExtrudeDirected(sk *SketchContext, distanceExpr, operation, direction string) error {
-	_, err := client.AddFeature(b.api.Features(), featureargs.Extrude{
+	_, err := b.ExtrudeNamed(sk, distanceExpr, operation, direction)
+	return err
+}
+
+// ExtrudeNamed extrudes like ExtrudeDirected but returns the created feature's name, so the solid
+// can be patterned — a cylindrical roller extruded symmetric about the mid-plane, then arrayed
+// around the pitch circle.
+func (b *PartBuilder) ExtrudeNamed(sk *SketchContext, distanceExpr, operation, direction string) (string, error) {
+	res, err := client.AddFeature(b.api.Features(), featureargs.Extrude{
 		SketchIndex: sk.index, ProfileIndex: 0, Distance: distanceExpr,
 		Operation: operation, Direction: direction,
 	})
 	if err != nil {
-		return fmt.Errorf("extrude sketch %d by %q (%s %s): %w",
+		return "", fmt.Errorf("extrude sketch %d by %q (%s %s): %w",
 			sk.index, distanceExpr, operation, direction, err)
 	}
-	return nil
+	return featureName(res), nil
 }
 
 // Loft blends the bottom sketch's first profile into the top sketch's first profile as a solid
