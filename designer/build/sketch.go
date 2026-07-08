@@ -6,6 +6,8 @@ import (
 	"fmt"
 
 	"oblikovati.org/api/client"
+	"oblikovati.org/api/types"
+	"oblikovati.org/api/wire"
 )
 
 // SketchContext is a handle to a live sketch, offering the constrained, parameter-driven
@@ -39,6 +41,79 @@ func (s *SketchContext) GroundedCircle(cx, cy float64, diameterExpr string) erro
 	}
 	if _, err := sk.Dimension(s.index).Diameter(res.EntityID, diameterExpr); err != nil {
 		return fmt.Errorf("dimension circle diameter %q: %w", diameterExpr, err)
+	}
+	return nil
+}
+
+// rectHalfSeed is the arbitrary construction half-extent (cm) the centred rectangle is drawn at
+// before its dimensions drive it to the member's true size — a non-degenerate seed the solver
+// scales, exactly as GroundedCircle's literal centre is a seed the diameter dimension overrides.
+const rectHalfSeed = 1.0
+
+// GroundedRectangle adds an axis-aligned rectangle centred on the sketch origin and fully
+// constrains it (DOF 0) so widthExpr (its X extent) and heightExpr (its Y extent) — parameter
+// names or formulas — drive its size. It is the profile every rectangular structural stock
+// shares (flat bar now; the flanges and web of an I-beam later build on the same centred-profile
+// convention, so the extruded solid's neutral axis is the sketch origin).
+//
+// The centre-variant rectangle seeds the four corners symmetric about the origin; the axis
+// constraints make them a rigid rectangle; the two side dimensions set the size and the two
+// offset dimensions (from a grounded origin point to the bottom and left edges, each at half the
+// size) pin the centre back onto the origin.
+func (s *SketchContext) GroundedRectangle(widthExpr, heightExpr string) error {
+	res, err := s.b.api.Sketch().AddEntity(wire.AddSketchEntityArgs{
+		SketchIndex: s.index, Kind: string(types.SketchEntityRectangle), Variant: "center",
+		Points: [][]float64{{0, 0}, {rectHalfSeed, rectHalfSeed}},
+	})
+	if err != nil {
+		return fmt.Errorf("add centred rectangle: %w", err)
+	}
+	if len(res.PointIDs) < 4 || len(res.EntityIDs) < 4 {
+		return fmt.Errorf("rectangle reply short: corners=%d, edges=%d (want 4 each)", len(res.PointIDs), len(res.EntityIDs))
+	}
+	return s.constrainCenteredRectangle(res.PointIDs, res.EntityIDs, widthExpr, heightExpr)
+}
+
+// constrainCenteredRectangle pins a rectangle (corners in order bottom-left, bottom-right,
+// top-right, top-left; edges in order bottom, right, top, left) to DOF 0 centred on the origin.
+// The axis constraints make it a rigid rectangle (4 DOF: centre x/y + width/height); the two side
+// dimensions fix the size; the two offset dimensions from the grounded origin point to the bottom
+// and left edges (each half the corresponding size) fix the centre at the origin.
+func (s *SketchContext) constrainCenteredRectangle(corners, edges []uint64, widthExpr, heightExpr string) error {
+	bl, br, tr, tl := corners[0], corners[1], corners[2], corners[3]
+	bottom, left := edges[0], edges[3]
+	con, dim := s.b.api.Sketch().Constrain(s.index), s.b.api.Sketch().Dimension(s.index)
+	if err := rectAxisConstraints(con, bl, br, tr, tl); err != nil {
+		return err
+	}
+	origin, err := s.b.api.Sketch().AddPoint(s.index, []float64{0, 0})
+	if err != nil {
+		return fmt.Errorf("add rectangle centre point: %w", err)
+	}
+	if len(origin.PointIDs) < 1 {
+		return fmt.Errorf("rectangle centre point reply had no point id")
+	}
+	o := origin.PointIDs[0]
+	if _, err := con.Fix(o); err != nil {
+		return fmt.Errorf("fix rectangle centre: %w", err)
+	}
+	return centeredRectangleDimensions(dim, o, bl, br, tl, bottom, left, widthExpr, heightExpr)
+}
+
+// centeredRectangleDimensions sizes the rectangle (width across the bottom edge, height up the
+// left edge) and centres it on the grounded origin point via the two half-size offset dimensions.
+func centeredRectangleDimensions(dim client.Dimension, o, bl, br, tl, bottom, left uint64, widthExpr, heightExpr string) error {
+	if _, err := dim.Distance(bl, br, widthExpr); err != nil {
+		return fmt.Errorf("dimension rectangle width %q: %w", widthExpr, err)
+	}
+	if _, err := dim.Distance(bl, tl, heightExpr); err != nil {
+		return fmt.Errorf("dimension rectangle height %q: %w", heightExpr, err)
+	}
+	if _, err := dim.Offset(o, bottom, "("+heightExpr+") / 2"); err != nil {
+		return fmt.Errorf("centre rectangle vertically: %w", err)
+	}
+	if _, err := dim.Offset(o, left, "("+widthExpr+") / 2"); err != nil {
+		return fmt.Errorf("centre rectangle horizontally: %w", err)
 	}
 	return nil
 }
