@@ -5,6 +5,7 @@ package build
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 
 	"oblikovati.org/api/wire"
 	"oblikovati.org/api/wire/featureargs"
@@ -30,14 +31,16 @@ type fakeHost struct {
 	circleRadius string
 	constraints  []string // geometric constraint kinds, in order
 	dimensions   []wire.AddDimensionArgs
-	extrude      featureargs.Extrude        // the last extrude (back-compat with the round-bar test)
-	extrudeKind  string                     // the last feature kind
-	extrudes     []featureargs.Extrude      // every extrude, in order
-	threads      []featureargs.Thread       // every cosmetic/cut thread, in order
-	lofts        []featureargs.Loft         // every loft, in order
-	coils        []featureargs.Coil         // every coil, in order
-	revolves     []featureargs.Revolve      // every revolve, in order
-	workPlanes   []wire.CreateWorkPlaneArgs // every work plane created, in order
+	extrude      featureargs.Extrude               // the last extrude (back-compat with the round-bar test)
+	extrudeKind  string                            // the last feature kind
+	extrudes     []featureargs.Extrude             // every extrude, in order
+	threads      []featureargs.Thread              // every cosmetic/cut thread, in order
+	lofts        []featureargs.Loft                // every loft, in order
+	coils        []featureargs.Coil                // every coil, in order
+	revolves     []featureargs.Revolve             // every revolve, in order
+	patterns     []wire.CircularPatternFeatureArgs // every circular pattern, in order
+	workPlanes   []wire.CreateWorkPlaneArgs        // every work plane created, in order
+	featureCount int                               // running count, to name each added feature
 }
 
 // Call records the method and returns a minimal reply per the wire method.
@@ -110,6 +113,18 @@ func (h *fakeHost) addEntityReply(req []byte) ([]byte, error) {
 			PointIDs:  []uint64{44, 45, 46, 47}, // 4 corners: BL, BR, TR, TL
 		})
 	}
+	if a.Kind == "arc" {
+		return json.Marshal(wire.AddSketchEntityResult{
+			EntityID: 80, Kind: "arc",
+			PointIDs: []uint64{81, 82, 83}, // centre, start, end
+		})
+	}
+	if a.Kind == "line" {
+		return json.Marshal(wire.AddSketchEntityResult{
+			EntityID: 90, Kind: "line",
+			PointIDs: []uint64{91, 92}, // two ends
+		})
+	}
 	if a.Kind == "polyline" {
 		n := len(a.Points) // one corner + one edge per point in a closed loop
 		pts, edges := make([]uint64, n), make([]uint64, n)
@@ -141,8 +156,8 @@ func (h *fakeHost) referenceKeysReply() ([]byte, error) {
 	return json.Marshal(wire.ReferenceKeysResult{Bodies: []wire.BodyTopology{{Faces: faces}}})
 }
 
-// featureReply records each feature: extrudes (kept individually and as the last one) and
-// threads.
+// featureReply records each feature (extrudes/threads/lofts/coils/revolves/patterns) and returns a
+// unique feature name in the "feature" field, so a follow-up pattern can reference the source.
 func (h *fakeHost) featureReply(req []byte) ([]byte, error) {
 	args := decode[wire.AddFeatureArgs](req)
 	h.extrudeKind = args.Kind
@@ -168,8 +183,15 @@ func (h *fakeHost) featureReply(req []byte) ([]byte, error) {
 		var rv featureargs.Revolve
 		_ = json.Unmarshal(args.Args, &rv)
 		h.revolves = append(h.revolves, rv)
+	case wire.FeatureKindPatternCircular:
+		var p wire.CircularPatternFeatureArgs
+		_ = json.Unmarshal(args.Args, &p)
+		h.patterns = append(h.patterns, p)
 	}
-	return []byte("{}"), nil
+	h.featureCount++
+	return json.Marshal(struct {
+		Feature string `json:"feature"`
+	}{Feature: fmt.Sprintf("Feature%d", h.featureCount)})
 }
 
 // decode unmarshals a recorded request body into T (best-effort; malformed input yields the

@@ -171,3 +171,18 @@ mid-range of the published min/max), in millimetres.
 - **Representational** (per the milestone plan): the thickness and nominal size are grounded in the
   standard; the ring's radial width/outer diameter are representative proportions and the lug ears
   with their assembly-plier holes are not modelled.
+
+## Bearings
+
+### `ball_bearing_iso15.json` — ISO 15 (deep-groove ball bearings, 60/62/63 series)
+- Bore d, outer diameter D and width B are the **boundary dimensions** tabulated in ISO 15 for the
+  6000 (light, 60), 6200 (medium, 62) and 6300 (heavy, 63) series (e.g. 6205 → 25 × 52 × 15). These
+  three per member are exact.
+- The **ball count Z** is a representative value (typical for the size in general-purpose catalogues,
+  e.g. SKF), not an ISO 15 dimension — ISO 15 tabulates only the boundary dimensions. It drives the
+  circular pattern of the ball complement.
+- **Representational** (per the milestone plan): the pitch-circle diameter, ball diameter and the two
+  race diameters are **derived parameters** computed from bore/outer_dia by fixed fractions of the
+  radial gap (ball ≈ 0.3·(D−d); race faces inset ≈ 0.21·(D−d) from the pitch circle), so the whole
+  bearing re-drives with the size. Race grooves, cage and seals are a tracked refinement; the balls
+  sit as solids on the pitch circle between two solid annular rings.
