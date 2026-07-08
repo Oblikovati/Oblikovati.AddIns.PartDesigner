@@ -29,17 +29,37 @@ enforces this.
 
 ## Status
 
+Milestone **M1 — Content Center: Procedural Standard Parts (v0.1)** is complete. Framework
+(A1–A5), every category (B–E), and the polish/validation pass (F1–F3) are done and
+live-validated over the MCP bridge.
+
+### Framework
+
 | Area | State |
 | --- | --- |
-| A1 — scaffold + host load (ribbon button + dockable panel) | done — loads live; `PartDesigner.Show` command + dockable panel confirmed on the running head |
+| A1 — scaffold + host load (ribbon button + dockable panel) | done — loads live; `PartDesigner.Show` + dockable panel confirmed |
 | A2 — catalogue data model & standards loader | done |
 | A3 — generator framework + PartBuilder | done |
 | A4 — placement + Change-Size | done |
-| A5 — panel UI + headless commands | done — cascading dropdowns + Place; live-confirmed (round bar placed) |
-| B/C/D/E — Fasteners / Structural / Shaft / Bearings generators | planned |
+| A5 — panel UI + headless commands | done — cascading dropdowns + Place |
+| F1 — Standard/Category filters + quick search | done — filter by standard/category + text search over family name & size |
+| F2 — Change-Size UX (panel bound to active part) | done — activating a placed part binds it; a Size change re-drives it in place |
+| F3 — live cross-category validation + docs | done — see [`livetest/`](livetest/) and [`SOURCES.md`](designer/catalog/data/SOURCES.md) |
 
-Milestone and issues: see the repository's GitHub tracker
-(_M1 — Content Center: Procedural Standard Parts (v0.1)_).
+### Parts (procedural generators)
+
+| Category | Parts (standards) | Generators |
+| --- | --- | --- |
+| Fasteners | Hex bolt (ISO 4017/4014, DIN 933/931) · Socket head & countersunk screw (ISO 4762/10642, DIN 912) · Hex nut (ISO 4032/4035, DIN 934) · Washer plain & spring (ISO 7089, DIN 125/127) · Stud & threaded rod (DIN 939/976) | `hex_bolt` `socket_screw` `hex_nut` `washer` `stud` |
+| Structural | Round & flat bar (ISO 1035, EN 10058) · I-beams (EN IPE/HE A/HE B, AISC W) · Channels (EN UPN, AISC C) · Angles L (EN 10056) · Tees (EN 10055) · Hollow SHS/RHS/CHS (EN 10219) | `round_bar` `flat_bar` `i_beam` `channel` `angle` `tee` `hollow_rect` `hollow_round` |
+| Shaft Parts | Parallel key (DIN 6885) · Dowel pin (ISO 2338) · Retaining ring (DIN 471/472) | `key` `pin` `circlip` |
+| Bearings | Deep-groove ball bearing (ISO 15) · Cylindrical roller bearing (ISO 15) · Plain sleeve bush (ISO 4379) | `ball_bearing` `roller_bearing` `plain_bush` |
+
+Every table's numbers are grounded in the cited standard — provenance in
+[`designer/catalog/data/SOURCES.md`](designer/catalog/data/SOURCES.md). Tracked refinements
+(root fillets, tapered/thrust bearings, gib-head keys, dowel chamfers, …) are noted there.
+
+Milestone and issues: see the repository's GitHub tracker.
 
 ## Build & test
 
