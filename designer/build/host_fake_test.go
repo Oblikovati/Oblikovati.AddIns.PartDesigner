@@ -35,6 +35,7 @@ type fakeHost struct {
 	extrudes     []featureargs.Extrude      // every extrude, in order
 	threads      []featureargs.Thread       // every cosmetic/cut thread, in order
 	lofts        []featureargs.Loft         // every loft, in order
+	coils        []featureargs.Coil         // every coil, in order
 	workPlanes   []wire.CreateWorkPlaneArgs // every work plane created, in order
 }
 
@@ -101,6 +102,13 @@ func (h *fakeHost) addEntityReply(req []byte) ([]byte, error) {
 			PointIDs:  points,
 		})
 	}
+	if a.Kind == "rectangle" {
+		return json.Marshal(wire.AddSketchEntityResult{
+			EntityID: 40, Kind: "rectangle",
+			EntityIDs: []uint64{40, 41, 42, 43}, // 4 edges
+			PointIDs:  []uint64{44, 45, 46, 47}, // 4 corners: BL, BR, TR, TL
+		})
+	}
 	if h.noPoints {
 		return json.Marshal(wire.AddSketchEntityResult{EntityID: 10})
 	}
@@ -141,6 +149,10 @@ func (h *fakeHost) featureReply(req []byte) ([]byte, error) {
 		var l featureargs.Loft
 		_ = json.Unmarshal(args.Args, &l)
 		h.lofts = append(h.lofts, l)
+	case featureargs.KindCoil:
+		var cl featureargs.Coil
+		_ = json.Unmarshal(args.Args, &cl)
+		h.coils = append(h.coils, cl)
 	}
 	return []byte("{}"), nil
 }

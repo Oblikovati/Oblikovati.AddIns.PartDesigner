@@ -37,13 +37,17 @@ func TestPanelShowsCascadingBrowser(t *testing.T) {
 	if !ok || !contains(fam.Options, "ISO 4017 Hex Head") || !contains(fam.Options, "DIN 934 Hex") {
 		t.Errorf("family options = %v, want both seed families' labels", fam.Options)
 	}
-	// Default selection is the first family (id-sorted: din912-socket-screw) and its first size.
-	if fam.Value != "DIN 912 Socket Head" {
-		t.Errorf("default family = %q, want DIN 912 Socket Head", fam.Value)
+	// Default selection is the first family (id-sorted: din125-washer) and its first size.
+	if fam.Value != "DIN 125 Plain" {
+		t.Errorf("default family = %q, want DIN 125 Plain", fam.Value)
 	}
 	size, _ := controlByID(controls, sizeControlID)
 	if size.Value == "" || len(size.Options) == 0 {
 		t.Errorf("size dropdown empty; value=%q options=%v", size.Value, size.Options)
+	}
+	// The washer family keys on a text "size" column, so its sizes read as nominal designations.
+	if size.Value != "M6" || !contains(size.Options, "M12") {
+		t.Errorf("washer size dropdown = %q %v, want nominal M6..M12 labels", size.Value, size.Options)
 	}
 	place, ok := controlByID(controls, "place")
 	if !ok || place.CommandID != PlaceCommandID {
@@ -82,9 +86,9 @@ func TestSelectFamilyAndCategory(t *testing.T) {
 	e := NewEngine(newFakeHost())
 
 	// Filtering by the top-level category keeps the fastener families (2 hex bolts, 3 socket
-	// screws, and 3 hex nuts: DIN 934, ISO 4032, ISO 4035 thin).
+	// screws, 3 hex nuts, and 3 washers: DIN 125/ISO 7089 plain + DIN 127 spring).
 	e.applySelection(categoryControlID, "Fasteners")
-	if e.sel.category != "Fasteners" || len(e.familyOptions(e.sel)) != 8 {
+	if e.sel.category != "Fasteners" || len(e.familyOptions(e.sel)) != 11 {
 		t.Fatalf("category=Fasteners: cat=%q families=%v", e.sel.category, e.familyOptions(e.sel))
 	}
 

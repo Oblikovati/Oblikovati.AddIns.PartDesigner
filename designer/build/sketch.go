@@ -2,7 +2,11 @@
 
 package build
 
-import "fmt"
+import (
+	"fmt"
+
+	"oblikovati.org/api/client"
+)
 
 // SketchContext is a handle to a live sketch, offering the constrained, parameter-driven
 // primitives generators build profiles from. Its helpers encode the DOF-0 discipline
@@ -80,6 +84,89 @@ func (s *SketchContext) constrainHexagon(pointIDs []uint64, acrossFlatsExpr stri
 	span := "(" + acrossFlatsExpr + ") / cos(30 deg)"
 	if _, err := s.b.api.Sketch().Dimension(s.index).Distance(corners[0], corners[3], span); err != nil {
 		return fmt.Errorf("dimension hexagon across-corners %q: %w", span, err)
+	}
+	return nil
+}
+
+// coilSectionInner, coilSectionOuter, coilSectionTop are the arbitrary construction size (cm) the
+// cross-section box is drawn at before its dimensions drive it — non-degenerate seeds the solver
+// scales, exactly as GroundedCircle's literal centre is a seed the diameter overrides.
+const (
+	coilSectionInner = 0.5
+	coilSectionOuter = 1.0
+	coilSectionTop   = 0.2
+)
+
+// GroundedRadialSection adds the rectangular cross-section a coil sweeps into a helical (spring)
+// washer: a box spanning radially from inner_dia/2 to outer_dia/2 and thickness tall, sitting at
+// that radius from a grounded origin point on a plane containing the coil axis (XZ). It is fully
+// constrained (DOF 0), so the section re-drives with the washer's parameters. AddRectangle only
+// makes four coincident-cornered lines (it lands under-constrained), so the constraints below
+// axis-align the edges, level the section with the axis, and dimension its position and size.
+func (s *SketchContext) GroundedRadialSection(innerDiaExpr, outerDiaExpr, thicknessExpr string) error {
+	sk := s.b.api.Sketch()
+	origin, err := sk.AddPoint(s.index, []float64{0, 0})
+	if err != nil {
+		return fmt.Errorf("add section origin point: %w", err)
+	}
+	rect, err := sk.AddRectangle(s.index, []float64{coilSectionInner, 0}, []float64{coilSectionOuter, coilSectionTop}, false)
+	if err != nil {
+		return fmt.Errorf("add section rectangle: %w", err)
+	}
+	if len(origin.PointIDs) < 1 || len(rect.PointIDs) < 4 {
+		return fmt.Errorf("section reply short: origin points=%d, corners=%d", len(origin.PointIDs), len(rect.PointIDs))
+	}
+	return s.constrainRadialSection(origin.PointIDs[0], rect.PointIDs, innerDiaExpr, outerDiaExpr, thicknessExpr)
+}
+
+// constrainRadialSection pins the cross-section (corners in order bottom-left, bottom-right,
+// top-right, top-left) to DOF 0: the origin point is grounded, the edges are axis-aligned, the
+// bottom-left corner sits level with the origin, and the dimensions place and size the box.
+func (s *SketchContext) constrainRadialSection(o uint64, p []uint64, innerDia, outerDia, thickness string) error {
+	con, dim := s.b.api.Sketch().Constrain(s.index), s.b.api.Sketch().Dimension(s.index)
+	bl, br, tr, tl := p[0], p[1], p[2], p[3]
+	if _, err := con.Ground(o); err != nil {
+		return fmt.Errorf("ground section origin: %w", err)
+	}
+	if err := rectAxisConstraints(con, bl, br, tr, tl); err != nil {
+		return err
+	}
+	if _, err := con.Horizontal(o, bl); err != nil {
+		return fmt.Errorf("level section with axis: %w", err)
+	}
+	return sectionDimensions(dim, o, bl, br, tl, innerDia, outerDia, thickness)
+}
+
+// sectionDimensions drives the cross-section's radial position and size from the parameters: the
+// bottom-left corner at inner_dia/2 from the axis, the radial width (outer_dia−inner_dia)/2, and
+// the thickness — so the swept ring spans the member's inner and outer diameters.
+func sectionDimensions(dim client.Dimension, o, bl, br, tl uint64, innerDia, outerDia, thickness string) error {
+	if _, err := dim.Distance(o, bl, "("+innerDia+") / 2"); err != nil {
+		return fmt.Errorf("position section at inner radius: %w", err)
+	}
+	if _, err := dim.Distance(bl, br, "(("+outerDia+") - ("+innerDia+")) / 2"); err != nil {
+		return fmt.Errorf("dimension section radial width: %w", err)
+	}
+	if _, err := dim.Distance(bl, tl, thickness); err != nil {
+		return fmt.Errorf("dimension section thickness: %w", err)
+	}
+	return nil
+}
+
+// rectAxisConstraints makes both horizontal edges horizontal and both vertical edges vertical, so
+// a positioned corner plus the two side dimensions leaves a rigid rectangle (DOF 0).
+func rectAxisConstraints(con client.Constrain, bl, br, tr, tl uint64) error {
+	if _, err := con.Horizontal(bl, br); err != nil {
+		return fmt.Errorf("bottom edge horizontal: %w", err)
+	}
+	if _, err := con.Horizontal(tl, tr); err != nil {
+		return fmt.Errorf("top edge horizontal: %w", err)
+	}
+	if _, err := con.Vertical(bl, tl); err != nil {
+		return fmt.Errorf("left edge vertical: %w", err)
+	}
+	if _, err := con.Vertical(br, tr); err != nil {
+		return fmt.Errorf("right edge vertical: %w", err)
 	}
 	return nil
 }

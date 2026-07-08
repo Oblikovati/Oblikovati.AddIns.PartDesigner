@@ -165,7 +165,7 @@ func TestFamiliesOrdered(t *testing.T) {
 		t.Fatalf("Load() error = %v", err)
 	}
 	got := ids(c.Families())
-	if len(got) < 2 || got[0] != "din912-socket-screw" {
-		t.Errorf("Families() = %v, want id-sorted with din912-socket-screw first", got)
+	if len(got) < 2 || got[0] != "din125-washer" {
+		t.Errorf("Families() = %v, want id-sorted with din125-washer first", got)
 	}
 }
