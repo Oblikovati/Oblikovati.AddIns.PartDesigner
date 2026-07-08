@@ -32,8 +32,9 @@ func TestTreeGroupsFamiliesByCategory(t *testing.T) {
 	}
 
 	hexNut := child(t, child(t, fasteners, "Nuts"), "Hex")
-	if len(hexNut.Families) != 1 || hexNut.Families[0].ID != "din934-hex-nut" {
-		t.Errorf("Hex nut families = %v, want [din934-hex-nut]", ids(hexNut.Families))
+	if len(hexNut.Families) != 3 || !containsID(hexNut.Families, "din934-hex-nut") ||
+		!containsID(hexNut.Families, "iso4032-hex-nut") || !containsID(hexNut.Families, "iso4035-hex-nut") {
+		t.Errorf("Hex nut families = %v, want din934/iso4032/iso4035 hex-nut", ids(hexNut.Families))
 	}
 }
 

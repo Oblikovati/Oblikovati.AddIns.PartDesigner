@@ -81,10 +81,10 @@ func TestSelectionCascade(t *testing.T) {
 func TestSelectFamilyAndCategory(t *testing.T) {
 	e := NewEngine(newFakeHost())
 
-	// Filtering by the top-level category keeps the fastener families (hex bolts, hex nut, and
-	// the socket-head + countersunk socket screws).
+	// Filtering by the top-level category keeps the fastener families (2 hex bolts, 3 socket
+	// screws, and 3 hex nuts: DIN 934, ISO 4032, ISO 4035 thin).
 	e.applySelection(categoryControlID, "Fasteners")
-	if e.sel.category != "Fasteners" || len(e.familyOptions(e.sel)) != 6 {
+	if e.sel.category != "Fasteners" || len(e.familyOptions(e.sel)) != 8 {
 		t.Fatalf("category=Fasteners: cat=%q families=%v", e.sel.category, e.familyOptions(e.sel))
 	}
 
@@ -125,11 +125,11 @@ func TestPlaceSelection(t *testing.T) {
 }
 
 // TestPlaceSelectionReportsGeneratorGap surfaces a missing generator on the status bar rather
-// than failing silently. The hex-nut family's generator ("hex_nut") is not registered yet, so
-// selecting it and placing must report the gap.
+// than failing silently. The engine here registers only hex_bolt, so selecting the hex-nut
+// family (generator "hex_nut", absent from this registry) and placing must report the gap.
 func TestPlaceSelectionReportsGeneratorGap(t *testing.T) {
 	host := newFakeHost()
-	e := NewEngine(host) // DefaultRegistry has round_bar + hex_bolt, not hex_nut
+	e, _ := engineWith(t, host, "hex_bolt") // hex_nut deliberately NOT registered
 	e.applySelection(familyControlID, "DIN 934 Hex")
 	e.placeSelection()
 	if !strings.Contains(host.status, "not registered") {
