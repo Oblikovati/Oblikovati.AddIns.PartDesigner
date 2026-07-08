@@ -7,6 +7,16 @@ import (
 	"testing"
 )
 
+// containsID reports whether fams includes a family with the given id.
+func containsID(fams []*Family, id string) bool {
+	for _, f := range fams {
+		if f.ID == id {
+			return true
+		}
+	}
+	return false
+}
+
 func TestStandardsAndFilters(t *testing.T) {
 	c, err := Load()
 	if err != nil {
@@ -18,8 +28,8 @@ func TestStandardsAndFilters(t *testing.T) {
 	}
 
 	iso := c.ByStandardBody("iso") // case-insensitive
-	if len(iso) != 1 || iso[0].ID != "iso4017-hex-bolt" {
-		t.Errorf("ByStandardBody(iso) = %v, want [iso4017-hex-bolt]", ids(iso))
+	if !containsID(iso, "iso4017-hex-bolt") || !containsID(iso, "iso1035-round-bar") {
+		t.Errorf("ByStandardBody(iso) = %v, want the ISO families", ids(iso))
 	}
 	din := c.ByStandardBody("DIN")
 	if len(din) != 1 || din[0].ID != "din934-hex-nut" {
@@ -44,6 +54,10 @@ func TestByCategoryPrefix(t *testing.T) {
 	none := c.ByCategory(CategoryPath{"Bearings"})
 	if len(none) != 0 {
 		t.Errorf("Bearings subtree = %v, want empty", ids(none))
+	}
+	structural := c.ByCategory(CategoryPath{"Structural"})
+	if !containsID(structural, "iso1035-round-bar") {
+		t.Errorf("Structural subtree = %v, want the round bar", ids(structural))
 	}
 	// An empty prefix matches everything.
 	if got := c.ByCategory(nil); len(got) != c.Len() {
