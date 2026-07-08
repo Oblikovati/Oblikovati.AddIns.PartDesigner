@@ -1,0 +1,24 @@
+{
+  "id": "w-aisc",
+  "category": "Structural/Beams/W Shapes",
+  "standard": "AISC",
+  "generator": "i_beam",
+  "units": "in",
+  "keyColumns": ["designation"],
+  "columns": [
+    { "name": "designation", "param": "designation", "type": "text" },
+    { "name": "d", "param": "height", "type": "length" },
+    { "name": "bf", "param": "flange_width", "type": "length" },
+    { "name": "tw", "param": "web_thickness", "type": "length" },
+    { "name": "tf", "param": "flange_thickness", "type": "length" },
+    { "name": "l", "param": "length", "type": "length" }
+  ],
+  "members": [
+    { "designation": "W8x31", "d": 8.00, "bf": 8.00, "tw": 0.285, "tf": 0.435, "l": 240 },
+    { "designation": "W10x33", "d": 9.73, "bf": 7.96, "tw": 0.290, "tf": 0.435, "l": 240 },
+    { "designation": "W12x40", "d": 11.9, "bf": 8.01, "tw": 0.295, "tf": 0.515, "l": 240 },
+    { "designation": "W14x48", "d": 13.8, "bf": 8.03, "tw": 0.340, "tf": 0.595, "l": 240 },
+    { "designation": "W16x40", "d": 16.0, "bf": 7.00, "tw": 0.305, "tf": 0.505, "l": 240 },
+    { "designation": "W18x50", "d": 18.0, "bf": 7.50, "tw": 0.355, "tf": 0.570, "l": 240 }
+  ]
+}

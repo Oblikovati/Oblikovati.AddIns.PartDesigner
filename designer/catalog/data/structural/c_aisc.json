@@ -1,0 +1,23 @@
+{
+  "id": "c-aisc",
+  "category": "Structural/Channels/C Shapes",
+  "standard": "AISC",
+  "generator": "channel",
+  "units": "in",
+  "keyColumns": ["designation"],
+  "columns": [
+    { "name": "designation", "param": "designation", "type": "text" },
+    { "name": "d", "param": "height", "type": "length" },
+    { "name": "bf", "param": "flange_width", "type": "length" },
+    { "name": "tw", "param": "web_thickness", "type": "length" },
+    { "name": "tf", "param": "flange_thickness", "type": "length" },
+    { "name": "l", "param": "length", "type": "length" }
+  ],
+  "members": [
+    { "designation": "C6x8.2", "d": 6.00, "bf": 1.92, "tw": 0.200, "tf": 0.343, "l": 240 },
+    { "designation": "C8x11.5", "d": 8.00, "bf": 2.26, "tw": 0.220, "tf": 0.390, "l": 240 },
+    { "designation": "C10x15.3", "d": 10.0, "bf": 2.60, "tw": 0.240, "tf": 0.436, "l": 240 },
+    { "designation": "C12x20.7", "d": 12.0, "bf": 2.94, "tw": 0.282, "tf": 0.501, "l": 240 },
+    { "designation": "C15x33.9", "d": 15.0, "bf": 3.40, "tw": 0.400, "tf": 0.650, "l": 240 }
+  ]
+}

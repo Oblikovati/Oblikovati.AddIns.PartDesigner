@@ -37,21 +37,34 @@ func TestPanelShowsCascadingBrowser(t *testing.T) {
 	if !ok || !contains(fam.Options, "ISO 4017 Hex Head") || !contains(fam.Options, "DIN 934 Hex") {
 		t.Errorf("family options = %v, want both seed families' labels", fam.Options)
 	}
-	// Default selection is the first family (id-sorted: din125-washer) and its first size.
-	if fam.Value != "DIN 125 Plain" {
-		t.Errorf("default family = %q, want DIN 125 Plain", fam.Value)
+	// A default family + first size are always selected (the first family id-sorted, whichever
+	// it is) so the panel opens ready to place.
+	if fam.Value == "" || !contains(fam.Options, fam.Value) {
+		t.Errorf("default family = %q, want one of the family options %v", fam.Value, fam.Options)
 	}
 	size, _ := controlByID(controls, sizeControlID)
 	if size.Value == "" || len(size.Options) == 0 {
 		t.Errorf("size dropdown empty; value=%q options=%v", size.Value, size.Options)
 	}
-	// The washer family keys on a text "size" column, so its sizes read as nominal designations.
-	if size.Value != "M6" || !contains(size.Options, "M12") {
-		t.Errorf("washer size dropdown = %q %v, want nominal M6..M12 labels", size.Value, size.Options)
-	}
 	place, ok := controlByID(controls, "place")
 	if !ok || place.CommandID != PlaceCommandID {
 		t.Errorf("place button command = %q, want %q", place.CommandID, PlaceCommandID)
+	}
+}
+
+// TestWasherTextSizeColumn checks a family keyed on a text "size" column renders its sizes as
+// nominal designations (M6..M12) rather than numeric labels — selecting it explicitly so the
+// check does not depend on which family sorts first as the default.
+func TestWasherTextSizeColumn(t *testing.T) {
+	e := NewEngine(newFakeHost())
+	e.applySelection(familyControlID, "DIN 125 Plain")
+	if e.sel.familyID != "din125-washer" {
+		t.Fatalf("selected family = %q, want din125-washer", e.sel.familyID)
+	}
+	fam, _ := e.family(e.sel.familyID)
+	sizes := sizeOptions(fam)
+	if sizeLabelOf(fam, e.sel.memberKey) != "M6" || !contains(sizes, "M12") {
+		t.Errorf("washer sizes = %q %v, want nominal M6..M12 labels", sizeLabelOf(fam, e.sel.memberKey), sizes)
 	}
 }
 
