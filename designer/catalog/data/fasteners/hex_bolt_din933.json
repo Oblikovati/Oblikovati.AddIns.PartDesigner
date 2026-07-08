@@ -1,0 +1,22 @@
+{
+  "id": "din933-hex-bolt",
+  "category": "Fasteners/Bolts/Hex Head",
+  "standard": "DIN 933",
+  "generator": "hex_bolt",
+  "units": "mm",
+  "keyColumns": ["d", "l"],
+  "columns": [
+    { "name": "d", "param": "nominal_dia", "type": "length" },
+    { "name": "P", "param": "thread_pitch", "type": "length" },
+    { "name": "s", "param": "across_flats", "type": "length" },
+    { "name": "k", "param": "head_height", "type": "length" },
+    { "name": "l", "param": "length", "type": "length" },
+    { "name": "b", "param": "thread_length", "type": "length" }
+  ],
+  "members": [
+    { "d": 6, "P": 1.0, "s": 10, "k": 4.0, "l": 30, "b": 30 },
+    { "d": 8, "P": 1.25, "s": 13, "k": 5.3, "l": 40, "b": 40 },
+    { "d": 10, "P": 1.5, "s": 16, "k": 6.4, "l": 50, "b": 50 },
+    { "d": 12, "P": 1.75, "s": 18, "k": 7.5, "l": 60, "b": 60 }
+  ]
+}

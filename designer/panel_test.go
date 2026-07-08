@@ -37,9 +37,9 @@ func TestPanelShowsCascadingBrowser(t *testing.T) {
 	if !ok || !contains(fam.Options, "ISO 4017 Hex Head") || !contains(fam.Options, "DIN 934 Hex") {
 		t.Errorf("family options = %v, want both seed families' labels", fam.Options)
 	}
-	// Default selection is the first family (id-sorted: din934-hex-nut) and its first size.
-	if fam.Value != "DIN 934 Hex" {
-		t.Errorf("default family = %q, want DIN 934 Hex", fam.Value)
+	// Default selection is the first family (id-sorted: din933-hex-bolt) and its first size.
+	if fam.Value != "DIN 933 Hex Head" {
+		t.Errorf("default family = %q, want DIN 933 Hex Head", fam.Value)
 	}
 	size, _ := controlByID(controls, sizeControlID)
 	if size.Value == "" || len(size.Options) == 0 {
@@ -81,9 +81,9 @@ func TestSelectionCascade(t *testing.T) {
 func TestSelectFamilyAndCategory(t *testing.T) {
 	e := NewEngine(newFakeHost())
 
-	// Filtering by the top-level category keeps both seed families (both under Fasteners).
+	// Filtering by the top-level category keeps the fastener families (two hex bolts + a nut).
 	e.applySelection(categoryControlID, "Fasteners")
-	if e.sel.category != "Fasteners" || len(e.familyOptions(e.sel)) != 2 {
+	if e.sel.category != "Fasteners" || len(e.familyOptions(e.sel)) != 3 {
 		t.Fatalf("category=Fasteners: cat=%q families=%v", e.sel.category, e.familyOptions(e.sel))
 	}
 
@@ -124,11 +124,12 @@ func TestPlaceSelection(t *testing.T) {
 }
 
 // TestPlaceSelectionReportsGeneratorGap surfaces a missing generator on the status bar rather
-// than failing silently (din934-hex-nut's generator is not registered here).
+// than failing silently. The hex-nut family's generator ("hex_nut") is not registered yet, so
+// selecting it and placing must report the gap.
 func TestPlaceSelectionReportsGeneratorGap(t *testing.T) {
 	host := newFakeHost()
-	e := NewEngine(host) // DefaultRegistry has only round_bar, not hex_nut
-	// Default selection is din934-hex-nut.
+	e := NewEngine(host) // DefaultRegistry has round_bar + hex_bolt, not hex_nut
+	e.applySelection(familyControlID, "DIN 934 Hex")
 	e.placeSelection()
 	if !strings.Contains(host.status, "not registered") {
 		t.Errorf("status = %q, want a generator-not-registered message", host.status)

@@ -108,13 +108,57 @@ func (b *PartBuilder) Sketch(plane string) (*SketchContext, error) {
 }
 
 // Extrude extrudes the sketch's first profile to a distance expression (a parameter name or
-// formula) with the given operation (new|join|cut|intersect).
+// formula) with the given operation (new|join|cut|intersect), in the default (+Z) direction.
 func (b *PartBuilder) Extrude(sk *SketchContext, distanceExpr, operation string) error {
+	return b.ExtrudeDirected(sk, distanceExpr, operation, "")
+}
+
+// ExtrudeDirected extrudes with an explicit direction ("positive"|"negative"|"symmetric"; ""
+// ⇒ positive). A headed fastener grows its head up (+) and its shank down (−) from the same
+// base plane, so the two solids meet and join there.
+func (b *PartBuilder) ExtrudeDirected(sk *SketchContext, distanceExpr, operation, direction string) error {
 	_, err := client.AddFeature(b.api.Features(), featureargs.Extrude{
-		SketchIndex: sk.index, ProfileIndex: 0, Distance: distanceExpr, Operation: operation,
+		SketchIndex: sk.index, ProfileIndex: 0, Distance: distanceExpr,
+		Operation: operation, Direction: direction,
 	})
 	if err != nil {
-		return fmt.Errorf("extrude sketch %d by %q: %w", sk.index, distanceExpr, err)
+		return fmt.Errorf("extrude sketch %d by %q (%s %s): %w", sk.index, distanceExpr, operation, direction, err)
 	}
 	return nil
+}
+
+// CosmeticThread tags a cylindrical face (by reference key) with a representational, non-cut
+// thread of the given designation (e.g. "M8x1.25") — the Content-Center convention for
+// standard fasteners, which show thread lines without modelling the helical cut.
+func (b *PartBuilder) CosmeticThread(faceRef, designation string) error {
+	_, err := client.AddFeature(b.api.Features(), featureargs.Thread{
+		FaceRef: faceRef, Designation: designation, Cut: false,
+	})
+	if err != nil {
+		return fmt.Errorf("thread face %q as %q: %w", faceRef, designation, err)
+	}
+	return nil
+}
+
+// CylinderFaceKey returns the reference key of the part's single cylindrical face — the shank
+// side of a headed fastener, which the thread feature targets. It errors unless exactly one
+// cylinder exists, so an ambiguous (two cylinders) or missing shank is caught rather than
+// silently threading the wrong surface.
+func (b *PartBuilder) CylinderFaceKey() (string, error) {
+	keys, err := b.api.Model().ReferenceKeys()
+	if err != nil {
+		return "", fmt.Errorf("read reference keys: %w", err)
+	}
+	var found []string
+	for _, body := range keys.Bodies {
+		for _, f := range body.Faces {
+			if f.Kind == "cylinder" {
+				found = append(found, f.Key)
+			}
+		}
+	}
+	if len(found) != 1 {
+		return "", fmt.Errorf("want exactly 1 cylindrical face for the shank, found %d", len(found))
+	}
+	return found[0], nil
 }

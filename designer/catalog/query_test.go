@@ -32,8 +32,8 @@ func TestStandardsAndFilters(t *testing.T) {
 		t.Errorf("ByStandardBody(iso) = %v, want the ISO families", ids(iso))
 	}
 	din := c.ByStandardBody("DIN")
-	if len(din) != 1 || din[0].ID != "din934-hex-nut" {
-		t.Errorf("ByStandardBody(DIN) = %v, want [din934-hex-nut]", ids(din))
+	if !containsID(din, "din934-hex-nut") || !containsID(din, "din933-hex-bolt") {
+		t.Errorf("ByStandardBody(DIN) = %v, want the DIN families", ids(din))
 	}
 }
 
@@ -44,12 +44,12 @@ func TestByCategoryPrefix(t *testing.T) {
 	}
 
 	all := c.ByCategory(CategoryPath{"Fasteners"})
-	if len(all) != 2 {
-		t.Errorf("Fasteners subtree = %v, want both seed families", ids(all))
+	if len(all) != 3 {
+		t.Errorf("Fasteners subtree = %v, want the three fastener families", ids(all))
 	}
 	bolts := c.ByCategory(CategoryPath{"Fasteners", "Bolts"})
-	if len(bolts) != 1 || bolts[0].ID != "iso4017-hex-bolt" {
-		t.Errorf("Fasteners/Bolts = %v, want [iso4017-hex-bolt]", ids(bolts))
+	if !containsID(bolts, "iso4017-hex-bolt") || !containsID(bolts, "din933-hex-bolt") {
+		t.Errorf("Fasteners/Bolts = %v, want both hex bolts", ids(bolts))
 	}
 	none := c.ByCategory(CategoryPath{"Bearings"})
 	if len(none) != 0 {

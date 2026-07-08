@@ -73,6 +73,7 @@ func (r *Registry) Kinds() []string {
 func DefaultRegistry() *Registry {
 	r := NewRegistry()
 	mustRegister(r, RoundBar{})
+	mustRegister(r, HexBolt{})
 	return r
 }
 

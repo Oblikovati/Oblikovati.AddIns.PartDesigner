@@ -16,10 +16,12 @@ import (
 // replies. `existing` seeds parameters.list so the Set-vs-Add upsert path can be exercised;
 // `dof` is what constraintStatus reports (0 = fully constrained).
 type fakeHost struct {
-	existing   []string // parameter names already on the document
-	dof        int      // DOF returned by sketch.constraintStatus
-	failMethod string   // when non-empty, this wire method returns an error
-	noPoints   bool     // when true, sketch.addEntity returns a circle with no centre point
+	existing     []string // parameter names already on the document
+	dof          int      // DOF returned by sketch.constraintStatus
+	failMethod   string   // when non-empty, this wire method returns an error
+	noPoints     bool     // when true, sketch.addEntity returns a circle with no centre point
+	noCylinder   bool     // when true, model.referenceKeys reports no cylindrical face
+	shortPolygon bool     // when true, a polygon add returns too few points (missing centre)
 
 	methods      []string
 	added        []wire.ParameterSetArgs
@@ -27,8 +29,10 @@ type fakeHost struct {
 	circleRadius string
 	constraints  []string // geometric constraint kinds, in order
 	dimensions   []wire.AddDimensionArgs
-	extrude      featureargs.Extrude
-	extrudeKind  string
+	extrude      featureargs.Extrude   // the last extrude (back-compat with the round-bar test)
+	extrudeKind  string                // the last feature kind
+	extrudes     []featureargs.Extrude // every extrude, in order
+	threads      []featureargs.Thread  // every cosmetic/cut thread, in order
 }
 
 // Call records the method and returns a minimal reply per the wire method.
@@ -47,17 +51,15 @@ func (h *fakeHost) Call(method string, req []byte) ([]byte, error) {
 	case wire.MethodSketchCreate:
 		return []byte(`{"sketchIndex":1}`), nil
 	case wire.MethodSketchAddEntity:
-		h.circleRadius = decode[wire.AddSketchEntityArgs](req).Radius
-		if h.noPoints {
-			return []byte(`{"entityId":10,"pointIds":[]}`), nil
-		}
-		return []byte(`{"entityId":10,"pointIds":[11,12]}`), nil
+		return h.addEntityReply(req)
 	case wire.MethodSketchAddConstraint:
 		h.constraints = append(h.constraints, decode[wire.AddConstraintArgs](req).Kind)
 	case wire.MethodSketchAddDimension:
 		h.dimensions = append(h.dimensions, decode[wire.AddDimensionArgs](req))
 	case wire.MethodSketchConstraintStatus:
 		return json.Marshal(wire.ConstraintStatusResult{DOF: h.dof, Status: "checked"})
+	case wire.MethodModelReferenceKeys:
+		return h.referenceKeysReply()
 	case wire.MethodFeaturesAdd:
 		return h.featureReply(req)
 	}
@@ -73,12 +75,57 @@ func (h *fakeHost) listReply() ([]byte, error) {
 	return json.Marshal(res)
 }
 
-// featureReply records the feature kind + decoded extrude args.
+// addEntityReply serves sketch.addEntity: a polygon returns six corner points followed by the
+// centre (the shape GroundedHexagon expects), any other kind returns a single centre point (or
+// none when noPoints exercises the missing-centre guard). Only circles carry a Radius, so the
+// recorded circleRadius is left untouched by a polygon add.
+func (h *fakeHost) addEntityReply(req []byte) ([]byte, error) {
+	a := decode[wire.AddSketchEntityArgs](req)
+	if a.Radius != "" {
+		h.circleRadius = a.Radius
+	}
+	if a.Kind == "polygon" {
+		points := []uint64{30, 31, 32, 33, 34, 35, 36} // 6 corners + centre
+		if h.shortPolygon {
+			points = points[:3] // a malformed reply the GroundedHexagon guard must reject
+		}
+		return json.Marshal(wire.AddSketchEntityResult{
+			EntityID: 20, Kind: "polygon",
+			EntityIDs: []uint64{20, 21, 22, 23, 24, 25},
+			PointIDs:  points,
+		})
+	}
+	if h.noPoints {
+		return json.Marshal(wire.AddSketchEntityResult{EntityID: 10})
+	}
+	return json.Marshal(wire.AddSketchEntityResult{EntityID: 10, PointIDs: []uint64{11, 12}})
+}
+
+// referenceKeysReply reports a plane head-face plus one cylindrical shank face (suppressed by
+// noCylinder, to exercise the CylinderFaceKey guard).
+func (h *fakeHost) referenceKeysReply() ([]byte, error) {
+	faces := []wire.TopologyRef{{Key: "head-top", Kind: "plane"}}
+	if !h.noCylinder {
+		faces = append(faces, wire.TopologyRef{Key: "shank-cyl", Kind: "cylinder"})
+	}
+	return json.Marshal(wire.ReferenceKeysResult{Bodies: []wire.BodyTopology{{Faces: faces}}})
+}
+
+// featureReply records each feature: extrudes (kept individually and as the last one) and
+// threads.
 func (h *fakeHost) featureReply(req []byte) ([]byte, error) {
 	args := decode[wire.AddFeatureArgs](req)
 	h.extrudeKind = args.Kind
-	if args.Kind == featureargs.KindExtrude {
-		_ = json.Unmarshal(args.Args, &h.extrude)
+	switch args.Kind {
+	case featureargs.KindExtrude:
+		var ex featureargs.Extrude
+		_ = json.Unmarshal(args.Args, &ex)
+		h.extrude = ex
+		h.extrudes = append(h.extrudes, ex)
+	case featureargs.KindThread:
+		var t featureargs.Thread
+		_ = json.Unmarshal(args.Args, &t)
+		h.threads = append(h.threads, t)
 	}
 	return []byte("{}"), nil
 }
