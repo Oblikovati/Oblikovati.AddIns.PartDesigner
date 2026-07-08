@@ -1,0 +1,21 @@
+{
+  "id": "din471-external-circlip",
+  "category": "Shaft Parts/Retaining Rings/External",
+  "standard": "DIN 471",
+  "generator": "circlip",
+  "units": "mm",
+  "keyColumns": ["d"],
+  "columns": [
+    { "name": "d", "param": "nominal_dia", "type": "length" },
+    { "name": "di", "param": "inner_dia", "type": "length" },
+    { "name": "do", "param": "outer_dia", "type": "length" },
+    { "name": "s", "param": "thickness", "type": "length" }
+  ],
+  "members": [
+    { "d": 10, "di": 9.6, "do": 16.6, "s": 1.0 },
+    { "d": 20, "di": 19.0, "do": 27.0, "s": 1.2 },
+    { "d": 30, "di": 28.6, "do": 38.6, "s": 1.5 },
+    { "d": 40, "di": 37.5, "do": 49.5, "s": 1.75 },
+    { "d": 50, "di": 47.0, "do": 61.0, "s": 2.0 }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "id": "iso2338-dowel-pin",
+  "category": "Shaft Parts/Pins/Dowel",
+  "standard": "ISO 2338",
+  "generator": "pin",
+  "units": "mm",
+  "keyColumns": ["d", "l"],
+  "columns": [
+    { "name": "d", "param": "diameter", "type": "length" },
+    { "name": "l", "param": "length", "type": "length" }
+  ],
+  "members": [
+    { "d": 3, "l": 16 },
+    { "d": 4, "l": 20 },
+    { "d": 6, "l": 30 },
+    { "d": 8, "l": 40 },
+    { "d": 10, "l": 50 },
+    { "d": 12, "l": 60 }
+  ]
+}

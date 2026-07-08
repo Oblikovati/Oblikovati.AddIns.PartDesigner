@@ -81,6 +81,8 @@ func DefaultRegistry() *Registry {
 	mustRegister(r, HollowRect{})
 	mustRegister(r, HollowRound{})
 	mustRegister(r, Key{})
+	mustRegister(r, Pin{})
+	mustRegister(r, Circlip{})
 	mustRegister(r, HexBolt{})
 	mustRegister(r, SocketScrew{})
 	mustRegister(r, HexNut{})

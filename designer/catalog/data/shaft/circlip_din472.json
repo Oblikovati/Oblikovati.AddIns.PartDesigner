@@ -1,0 +1,21 @@
+{
+  "id": "din472-internal-circlip",
+  "category": "Shaft Parts/Retaining Rings/Internal",
+  "standard": "DIN 472",
+  "generator": "circlip",
+  "units": "mm",
+  "keyColumns": ["d"],
+  "columns": [
+    { "name": "d", "param": "nominal_dia", "type": "length" },
+    { "name": "di", "param": "inner_dia", "type": "length" },
+    { "name": "do", "param": "outer_dia", "type": "length" },
+    { "name": "s", "param": "thickness", "type": "length" }
+  ],
+  "members": [
+    { "d": 20, "di": 15.0, "do": 21.0, "s": 1.0 },
+    { "d": 30, "di": 24.0, "do": 31.4, "s": 1.2 },
+    { "d": 40, "di": 33.0, "do": 41.8, "s": 1.75 },
+    { "d": 50, "di": 42.0, "do": 52.5, "s": 2.0 },
+    { "d": 62, "di": 53.0, "do": 64.8, "s": 2.0 }
+  ]
+}
