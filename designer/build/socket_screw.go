@@ -163,5 +163,5 @@ func threadScrewShank(b *PartBuilder, rm ResolvedMember) error {
 	if err != nil {
 		return err
 	}
-	return b.CosmeticThread(face, metricThreadDesignation(rm))
+	return b.CosmeticThread(face, threadDesignation(rm))
 }

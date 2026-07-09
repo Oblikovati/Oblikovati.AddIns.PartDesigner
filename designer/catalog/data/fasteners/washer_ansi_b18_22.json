@@ -1,0 +1,23 @@
+{
+  "id": "ansi-b18-22-washer",
+  "category": "Fasteners/Washers/Plain",
+  "standard": "ASME B18.22.1",
+  "generator": "washer",
+  "variant": "plain",
+  "units": "in",
+  "keyColumns": ["size"],
+  "columns": [
+    { "name": "size", "param": "designation", "type": "text" },
+    { "name": "d1", "param": "inner_dia", "type": "length" },
+    { "name": "d2", "param": "outer_dia", "type": "length" },
+    { "name": "h", "param": "thickness", "type": "length" }
+  ],
+  "members": [
+    { "size": "1/4", "d1": 0.281, "d2": 0.625, "h": 0.065 },
+    { "size": "5/16", "d1": 0.344, "d2": 0.688, "h": 0.065 },
+    { "size": "3/8", "d1": 0.406, "d2": 0.812, "h": 0.065 },
+    { "size": "1/2", "d1": 0.531, "d2": 1.062, "h": 0.095 },
+    { "size": "5/8", "d1": 0.656, "d2": 1.312, "h": 0.095 },
+    { "size": "3/4", "d1": 0.812, "d2": 1.469, "h": 0.134 }
+  ]
+}

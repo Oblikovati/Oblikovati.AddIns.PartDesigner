@@ -23,8 +23,8 @@ func TestStandardsAndFilters(t *testing.T) {
 		t.Fatalf("Load() error = %v", err)
 	}
 
-	if got := c.Standards(); !reflect.DeepEqual(got, []string{"AISC", "DIN", "EN", "ISO"}) {
-		t.Errorf("Standards() = %v, want [AISC DIN EN ISO]", got)
+	if got := c.Standards(); !reflect.DeepEqual(got, []string{"AISC", "ASME", "DIN", "EN", "ISO"}) {
+		t.Errorf("Standards() = %v, want [AISC ASME DIN EN ISO]", got)
 	}
 	aisc := c.ByStandardBody("aisc")
 	if !containsID(aisc, "w-aisc") || !containsID(aisc, "c-aisc") {
@@ -48,8 +48,8 @@ func TestByCategoryPrefix(t *testing.T) {
 	}
 
 	all := c.ByCategory(CategoryPath{"Fasteners"})
-	if len(all) != 13 {
-		t.Errorf("Fasteners subtree = %v, want the thirteen fastener families", ids(all))
+	if len(all) != 17 {
+		t.Errorf("Fasteners subtree = %v, want the seventeen fastener families (13 metric + 4 ANSI inch)", ids(all))
 	}
 	studs := c.ByCategory(CategoryPath{"Fasteners", "Studs"})
 	if !containsID(studs, "din976-threaded-rod") || !containsID(studs, "din939-stud") {

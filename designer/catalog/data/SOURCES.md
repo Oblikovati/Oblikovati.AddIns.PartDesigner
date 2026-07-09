@@ -83,6 +83,30 @@ mid-range of the published min/max), in millimetres.
 - `l` = 40 / 50 / 60 / 70 mm are representative catalogue lengths (DIN 939 lists 12–200 mm per
   size); the plain shank between the two threaded ends is l − b1 − b2, which stays positive.
 
+## Fasteners / ANSI inch (Unified UNC)
+
+The ANSI inch families are authored in inches (`"units": "in"`, the loader converts) and carry an
+explicit `thread` text column (the Unified designation, e.g. `1/4-20`) that the generators feed to
+the host `ParseThreadDesignation` verbatim — the same generators as the metric families, driven from
+the inch designation instead of a metric d/P pair.
+
+### `hex_bolt_ansi_b18_2_1.json` — ASME B18.2.1 (hex bolt / hex cap screw, UNC)
+- Width across flats F and head height H from ASME B18.2.1 (1/4 → F=7/16, H=11/64; 1/2 → F=3/4,
+  H=11/32; 3/4 → F=1‑1/8, H=1/2). Nominal diameter D and UNC TPI (1/4‑20 … 3/4‑10) verbatim.
+  Length l is a representative value. Fully threaded (cosmetic).
+
+### `hex_nut_ansi_b18_2_2.json` — ASME B18.2.2 (finished hex nut, UNC)
+- Width across flats F and thickness H from ASME B18.2.2 (1/4 → F=7/16, H=7/32; 1/2 → F=3/4,
+  H=7/16). Bore is the nominal diameter; cosmetic UNC thread on the bore wall.
+
+### `socket_screw_ansi_b18_3.json` — ASME B18.3 (socket head cap screw, UNC)
+- Head diameter A, head height H (= D), hex socket size J and key engagement T from ASME B18.3
+  (1/4 → A=3/8, J=3/16; 1/2 → A=3/4, J=3/8). Cylindrical head; cosmetic UNC thread on the shank.
+
+### `washer_ansi_b18_22.json` — ASME B18.22.1 (Type A plain washer, narrow)
+- Inside diameter, outside diameter and thickness from the SAE/ASME B18.22.1 narrow (Type A)
+  series (1/2 → ID 0.531, OD 1.062, t 0.095). No thread.
+
 ## Structural
 
 ### `round_bar_iso1035.json` — ISO 1035 (hot-rolled round steel bar)

@@ -136,10 +136,11 @@ func mustFamily(t *testing.T, e *Engine) *catalog.Family {
 func TestSelectFamilyAndCategory(t *testing.T) {
 	e := NewEngine(newFakeHost())
 
-	// Filtering by the top-level category keeps the fastener families (2 hex bolts, 3 socket
-	// screws, 3 hex nuts, 3 washers, and 2 studs: DIN 976 rod + DIN 939 double-end).
+	// Filtering by the top-level category keeps the fastener families: 13 metric (2 hex bolts,
+	// 3 socket screws, 3 hex nuts, 3 washers, 2 studs) plus 4 ANSI inch (hex bolt, hex nut,
+	// washer, socket-head cap screw).
 	e.applySelection(categoryControlID, "Fasteners")
-	if e.sel.category != "Fasteners" || len(e.familyOptions(e.sel)) != 13 {
+	if e.sel.category != "Fasteners" || len(e.familyOptions(e.sel)) != 17 {
 		t.Fatalf("category=Fasteners: cat=%q families=%v", e.sel.category, e.familyOptions(e.sel))
 	}
 

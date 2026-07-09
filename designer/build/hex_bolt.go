@@ -65,16 +65,27 @@ func buildShank(b *PartBuilder) error {
 	return b.ExtrudeDirected(sk, "length", "join", "negative")
 }
 
-// threadSoleCylinder tags the part's single cylindrical face with a cosmetic metric thread
-// sized from the member's nominal diameter and pitch. It is the shared terminal step of a
-// fastener that ends with exactly one cylinder — a hex bolt's shank or a hex nut's bore — so
-// CylinderFaceKey's exactly-one guard resolves the right surface unambiguously.
+// threadSoleCylinder tags the part's single cylindrical face with a cosmetic thread sized from the
+// member's designation. It is the shared terminal step of a fastener that ends with exactly one
+// cylinder — a hex bolt's shank or a hex nut's bore — so CylinderFaceKey's exactly-one guard
+// resolves the right surface unambiguously.
 func threadSoleCylinder(b *PartBuilder, rm ResolvedMember) error {
 	face, err := b.CylinderFaceKey()
 	if err != nil {
 		return err
 	}
-	return b.CosmeticThread(face, metricThreadDesignation(rm))
+	return b.CosmeticThread(face, threadDesignation(rm))
+}
+
+// threadDesignation returns the member's explicit thread designation — the `thread` text column
+// (e.g. an inch "1/4-20") when present — else the ISO metric designation built from its d and P
+// columns. This lets a metric family drive the thread from d/P and an ANSI inch family carry the
+// Unified designation directly, both resolved host-side by ParseThreadDesignation.
+func threadDesignation(rm ResolvedMember) string {
+	if t := rm.Label("thread"); t != "" {
+		return t
+	}
+	return metricThreadDesignation(rm)
 }
 
 // metricThreadDesignation renders the ISO metric thread designation for a member — "M8x1.25"

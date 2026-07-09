@@ -173,3 +173,16 @@ func assertParam(t *testing.T, params []wire.ParameterSetArgs, name, expr string
 	}
 	t.Errorf("param %q not published; have %+v", name, params)
 }
+
+// TestThreadDesignationPrefersLabel checks an explicit `thread` label (an ANSI inch designation)
+// wins over the metric d/P fallback, so one fastener generator serves both metric and inch families.
+func TestThreadDesignationPrefersLabel(t *testing.T) {
+	metric := ResolvedMember{Member: catalog.Member{Values: map[string]float64{"d": 8, "P": 1.25}}}
+	if got := threadDesignation(metric); got != "M8x1.25" {
+		t.Errorf("metric threadDesignation = %q, want M8x1.25", got)
+	}
+	inch := ResolvedMember{Member: catalog.Member{Labels: map[string]string{"thread": "1/4-20"}}}
+	if got := threadDesignation(inch); got != "1/4-20" {
+		t.Errorf("inch threadDesignation = %q, want 1/4-20", got)
+	}
+}
