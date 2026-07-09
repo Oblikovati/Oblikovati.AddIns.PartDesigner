@@ -1,0 +1,22 @@
+{
+  "id": "ansi-b17-1-square-key",
+  "category": "Shaft Parts/Keys/Parallel",
+  "standard": "ASME B17.1",
+  "generator": "key",
+  "units": "in",
+  "keyColumns": ["size", "l"],
+  "columns": [
+    { "name": "size", "param": "designation", "type": "text" },
+    { "name": "b", "param": "width", "type": "length" },
+    { "name": "h", "param": "height", "type": "length" },
+    { "name": "l", "param": "length", "type": "length" }
+  ],
+  "members": [
+    { "size": "1/8", "b": 0.125, "h": 0.125, "l": 0.75 },
+    { "size": "3/16", "b": 0.1875, "h": 0.1875, "l": 1.0 },
+    { "size": "1/4", "b": 0.25, "h": 0.25, "l": 1.25 },
+    { "size": "5/16", "b": 0.3125, "h": 0.3125, "l": 1.5 },
+    { "size": "3/8", "b": 0.375, "h": 0.375, "l": 1.75 },
+    { "size": "1/2", "b": 0.5, "h": 0.5, "l": 2.0 }
+  ]
+}

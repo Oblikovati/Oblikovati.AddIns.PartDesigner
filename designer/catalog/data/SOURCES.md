@@ -215,6 +215,21 @@ the inch designation instead of a metric d/P pair.
   standard; the ring's radial width/outer diameter are representative proportions and the lug ears
   with their assembly-plier holes are not modelled.
 
+### ANSI inch shaft parts
+
+Authored in inches (`"units": "in"`) over the same `pin` / `key` / `circlip` generators as the
+metric families.
+
+- `dowel_pin_ansi_b18_8.json` — **ASME B18.8.2** hardened ground machine dowel pins; nominal
+  diameter (1/8 … 1/2) and a representative length. Modelled as a plain precise cylinder (end
+  chamfers are a tracked refinement, as for the ISO 2338 dowel).
+- `square_key_ansi_b17.json` — **ASME B17.1** square parallel keys; square cross-section b × b
+  (1/8 … 1/2) and a representative length. Square-ended (as DIN 6885 Form B).
+- `circlip_ansi_external.json` — **ASME B27.7** external (shaft) retaining rings; nominal shaft
+  diameter and ring thickness s grounded (1/2 → s ≈ 0.035). As with the DIN 471/472 rings the ring
+  is representational — the radial width / free outer diameter are representative proportions and the
+  lug ears are not modelled.
+
 ## Bearings
 
 ### `ball_bearing_iso15.json` — ISO 15 (deep-groove ball bearings, 60/62/63 series)
