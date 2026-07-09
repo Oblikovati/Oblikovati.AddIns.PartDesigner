@@ -1,0 +1,21 @@
+{
+  "id": "ansi-b18-8-2-dowel-pin",
+  "category": "Shaft Parts/Pins/Dowel",
+  "standard": "ASME B18.8.2",
+  "generator": "pin",
+  "units": "in",
+  "keyColumns": ["size", "l"],
+  "columns": [
+    { "name": "size", "param": "designation", "type": "text" },
+    { "name": "d", "param": "diameter", "type": "length" },
+    { "name": "l", "param": "length", "type": "length" }
+  ],
+  "members": [
+    { "size": "1/8", "d": 0.125, "l": 0.5 },
+    { "size": "3/16", "d": 0.1875, "l": 0.75 },
+    { "size": "1/4", "d": 0.25, "l": 1.0 },
+    { "size": "5/16", "d": 0.3125, "l": 1.0 },
+    { "size": "3/8", "d": 0.375, "l": 1.5 },
+    { "size": "1/2", "d": 0.5, "l": 2.0 }
+  ]
+}

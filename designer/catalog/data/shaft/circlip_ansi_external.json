@@ -1,0 +1,22 @@
+{
+  "id": "ansi-external-retaining-ring",
+  "category": "Shaft Parts/Retaining Rings/External",
+  "standard": "ASME B27.7",
+  "generator": "circlip",
+  "units": "in",
+  "keyColumns": ["size"],
+  "columns": [
+    { "name": "size", "param": "designation", "type": "text" },
+    { "name": "d", "param": "nominal_dia", "type": "length" },
+    { "name": "di", "param": "inner_dia", "type": "length" },
+    { "name": "do", "param": "outer_dia", "type": "length" },
+    { "name": "s", "param": "thickness", "type": "length" }
+  ],
+  "members": [
+    { "size": "1/4", "d": 0.25, "di": 0.24, "do": 0.415, "s": 0.025 },
+    { "size": "3/8", "d": 0.375, "di": 0.36, "do": 0.6225, "s": 0.025 },
+    { "size": "1/2", "d": 0.5, "di": 0.48, "do": 0.83, "s": 0.035 },
+    { "size": "3/4", "d": 0.75, "di": 0.72, "do": 1.245, "s": 0.042 },
+    { "size": "1", "d": 1.0, "di": 0.96, "do": 1.66, "s": 0.042 }
+  ]
+}
