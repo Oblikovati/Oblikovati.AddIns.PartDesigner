@@ -19,12 +19,13 @@ const (
 	raceClearanceFraction = "0.012"
 )
 
-// BallBearing generates a deep-groove ball bearing (ISO 15: 60/62/63 series) representationally: a
-// solid inner ring, a solid outer ring, and a circular pattern of balls on the pitch circle
-// between them. The three tabulated dimensions — bore, outer diameter, width — drive everything;
-// the pitch/ball/race diameters are derived parameters, so editing the bore re-drives the whole
-// assembly. Race grooves and seals are a tracked refinement; the milestone calls the balls
-// representational and patterned circularly.
+// BallBearing generates a deep-groove ball bearing (ISO 15: 60/62/63 series) representationally: an
+// inner ring and an outer ring each carrying a ground race groove, with a circular pattern of balls
+// nested in the grooves on the pitch circle between them. The three tabulated dimensions — bore,
+// outer diameter, width — drive everything; the pitch/ball/groove/shoulder diameters are derived
+// parameters, so editing the bore re-drives the whole assembly. The ball nests in the groove with a
+// uniform clearance (the groove arc sits just outside the ball surface), so the rings and balls stay
+// independent bodies — no boolean. Seals/shields are a tracked refinement (#53).
 type BallBearing struct{}
 
 // Kind is the family `generator` binding for deep-groove ball bearings.
@@ -46,10 +47,10 @@ func (BallBearing) Build(b *PartBuilder, rm ResolvedMember) error {
 	if err := b.patternBalls(); err != nil {
 		return err
 	}
-	if err := b.revolveRing("bore", "inner_race_dia"); err != nil {
+	if err := b.revolveGroovedRing("bore", "inner_shoulder_dia", true); err != nil {
 		return err
 	}
-	return b.revolveRing("outer_race_dia", "outer_dia")
+	return b.revolveGroovedRing("outer_dia", "outer_shoulder_dia", false)
 }
 
 // raceGap is the radial gap (outer_dia − bore) every rolling bearing's derived diameters are
@@ -76,8 +77,19 @@ func deriveRacesClearing(b *PartBuilder, elementDia string) error {
 	return b.DeriveParam("inner_race_dia", "pitch_dia - "+elementDia+" - "+clr)
 }
 
+// Race-groove proportions (see the geometry-math-advisor derivation, #53). The groove arc is a
+// conformity multiple of the ball diameter (grooveConformity ≈ r_g / ball_dia), so r_g sits just
+// outside the ball surface and the ball nests in the groove with a uniform clearance and no boolean.
+// The raceway land (shoulder) sits shoulderFactor·r_g off the pitch circle radially, leaving a
+// positive shoulder land on each side of the groove across the whole ISO 15 size range.
+const (
+	grooveConformity   = "0.52" // r_g = 0.52·ball_dia ⇒ r_g ≈ 1.04·ball_radius (design band 0.515–0.53)
+	grooveShoulderTwoK = "1.1"  // 2k with shoulder factor k = 0.55; shoulder_dia = pitch_dia ∓ 2k·r_g
+)
+
 // deriveBearingParams adds the ball bearing's derived parameters: the pitch circle, the ball
-// diameter (a fraction of the radial gap), and the two race diameters set to clear the ball crest.
+// diameter (a fraction of the radial gap), the ground race-groove radius, and the two raceway
+// shoulder diameters that flank the groove.
 func deriveBearingParams(b *PartBuilder) error {
 	if err := derivePitchDia(b); err != nil {
 		return err
@@ -85,7 +97,13 @@ func deriveBearingParams(b *PartBuilder) error {
 	if err := b.DeriveParam("ball_dia", raceGap+" * "+ballGapFraction); err != nil {
 		return err
 	}
-	return deriveRacesClearing(b, "ball_dia")
+	if err := b.DeriveParam("groove_radius", "ball_dia * "+grooveConformity); err != nil {
+		return err
+	}
+	if err := b.DeriveParam("inner_shoulder_dia", "pitch_dia - "+grooveShoulderTwoK+" * groove_radius"); err != nil {
+		return err
+	}
+	return b.DeriveParam("outer_shoulder_dia", "pitch_dia + "+grooveShoulderTwoK+" * groove_radius")
 }
 
 // revolveRing builds one ring as a solid of revolution: a rectangular radial section from innerDia
@@ -99,6 +117,22 @@ func (b *PartBuilder) revolveRing(innerDia, outerDia string) error {
 		return err
 	}
 	if err := sk.AssertFullyConstrained(); err != nil {
+		return err
+	}
+	_, err = b.Revolve(sk, "origin/axis/z", "360 deg", "new")
+	return err
+}
+
+// revolveGroovedRing builds one ring as a solid of revolution whose raceway carries a ground race
+// groove: a grooved meridian section (far edge → axial faces → shoulders → groove arc), revolved a
+// full turn about the Z axis. edgeDia is the ring's far cylindrical edge (bore/outer_dia) and
+// shoulderDia its raceway land; innerRing picks whether the groove dips toward the axis or away.
+func (b *PartBuilder) revolveGroovedRing(edgeDia, shoulderDia string, innerRing bool) error {
+	sk, err := b.Sketch("XZ")
+	if err != nil {
+		return err
+	}
+	if err := sk.GroundedGroovedRingSection(edgeDia, shoulderDia, "pitch_dia", "groove_radius", "width", innerRing); err != nil {
 		return err
 	}
 	_, err = b.Revolve(sk, "origin/axis/z", "360 deg", "new")

@@ -32,9 +32,9 @@ func bearingMember(designation string, bore, outerDia, width, balls float64) Res
 }
 
 // TestBallBearingBuildsRingsAndBalls is the E1 acceptance check: the three tabulated dimensions and
-// the ball count are published, the pitch/ball/race diameters are derived, two rings are revolved
-// about the axis and one ball about the pitch-circle radius, then the ball is circular-patterned
-// ball_count times.
+// the ball count are published, the pitch/ball/groove/shoulder diameters are derived, two grooved
+// rings are revolved about the axis and one ball about the pitch-circle radius, then the ball is
+// circular-patterned ball_count times.
 func TestBallBearingBuildsRingsAndBalls(t *testing.T) {
 	h := &fakeHost{dof: 0}
 	if err := (BallBearing{}).Build(newBuilder(h, catalog.UnitsMillimetre), bearingMember("6205", 25, 52, 15, 9)); err != nil {
@@ -46,10 +46,11 @@ func TestBallBearingBuildsRingsAndBalls(t *testing.T) {
 	assertParam(t, h.added, "ball_count", "9")
 	assertParam(t, h.added, "pitch_dia", "(bore + outer_dia) / 2")
 	assertParam(t, h.added, "ball_dia", "(outer_dia - bore) * 0.28")
-	// Each race clears the ball crest (pitch_dia ± ball_dia) by a fraction of the gap, so the ring
-	// solids never overlap the balls.
-	assertParam(t, h.added, "outer_race_dia", "pitch_dia + ball_dia + (outer_dia - bore) * 0.012")
-	assertParam(t, h.added, "inner_race_dia", "pitch_dia - ball_dia - (outer_dia - bore) * 0.012")
+	// The ground race groove: its radius is a conformity multiple of the ball diameter, and the two
+	// raceway shoulders flank it 2k·r_g off the pitch circle, so the ball nests in the groove.
+	assertParam(t, h.added, "groove_radius", "ball_dia * 0.52")
+	assertParam(t, h.added, "inner_shoulder_dia", "pitch_dia - 1.1 * groove_radius")
+	assertParam(t, h.added, "outer_shoulder_dia", "pitch_dia + 1.1 * groove_radius")
 
 	if len(h.revolves) != 3 {
 		t.Fatalf("revolves = %d, want 3 (one ball + two rings)", len(h.revolves))
@@ -109,6 +110,37 @@ func TestBallBearingBuildErrorsPropagate(t *testing.T) {
 		h := &fakeHost{dof: 0, failMethod: m}
 		if err := (BallBearing{}).Build(newBuilder(h, catalog.UnitsMillimetre), bearingMember("6205", 25, 52, 15, 9)); err == nil {
 			t.Errorf("failMethod %q: Build succeeded, want an error", m)
+		}
+	}
+}
+
+// TestBallBearingGrooveFitsRaceway guards the ground-race-groove geometry against a vanishing
+// shoulder land: with groove_radius = 0.52·ball_dia and ball_dia = 0.28·gap, the groove's axial
+// half-span z_s = groove_radius·sqrt(1−0.55²) ≈ 0.835·groove_radius must stay inside width/2, or the
+// groove would swallow the raceway shoulder and the ring section would self-intersect on revolve.
+// This is the static, per-member check the fakeHost cannot make (it does not evaluate expressions).
+func TestBallBearingGrooveFitsRaceway(t *testing.T) {
+	cat, err := catalog.Load()
+	if err != nil {
+		t.Fatalf("catalog.Load() error = %v", err)
+	}
+	const zsFactor = 0.835 // sqrt(1 − 0.55²), the groove half-axial-span as a fraction of groove_radius
+	for _, fam := range cat.Families() {
+		if fam.Generator != "ball_bearing" {
+			continue
+		}
+		cols := map[string]string{}
+		for _, c := range fam.Columns {
+			cols[c.Param] = c.Name
+		}
+		for _, m := range fam.Members {
+			bore, outer, width := m.Values[cols["bore"]], m.Values[cols["outer_dia"]], m.Values[cols["width"]]
+			grooveRadius := 0.52 * (0.28 * (outer - bore))
+			if land := width/2 - zsFactor*grooveRadius; land <= 0 {
+				t.Errorf("family %q member %q: groove swallows the raceway shoulder "+
+					"(width/2=%.2f ≤ 0.835·groove_radius=%.2f, land=%.2f)",
+					fam.ID, m.Key, width/2, zsFactor*grooveRadius, land)
+			}
 		}
 	}
 }
