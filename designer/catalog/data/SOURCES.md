@@ -155,8 +155,11 @@ the inch designation instead of a metric d/P pair.
 - Leg lengths a, b and thickness t are the nominal values tabulated in EN 10056-1 for equal-leg
   (a = b, e.g. L 60×60×6) and unequal-leg (e.g. L 100×65×8) angles. A representative subset of each
   is included.
-- **Modelled sharp**: the root radius r1 and toe radii r2 are deferred; the leg lengths and
-  thickness are exact. The heel (outer corner) sits at the part origin.
+- **Root fillet r1 and toe radii r2 modelled** (#51): the concave root fillet at the inner heel and
+  the convex radius at each leg tip are the EN 10056-1 tabulated values (e.g. L 40×40×4 → r1 = 6,
+  r2 = 3), cross-checked against the published sectional area — the modelled filleted area for
+  L 40×40×4 is 3.079 cm² vs the tabulated 3.08 cm². The heel (outer corner) stays sharp and sits at
+  the part origin.
 - Length is a representative stock length (6000 mm), user-overridable.
 
 ### `tee_en10055.json` — EN 10055 (hot-rolled equal-flange tees, T)

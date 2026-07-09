@@ -4,19 +4,91 @@
   "standard": "EN 10056",
   "generator": "angle",
   "units": "mm",
-  "keyColumns": ["designation"],
+  "keyColumns": [
+    "designation"
+  ],
   "columns": [
-    { "name": "designation", "param": "designation", "type": "text" },
-    { "name": "a", "param": "leg_a", "type": "length" },
-    { "name": "b", "param": "leg_b", "type": "length" },
-    { "name": "t", "param": "thickness", "type": "length" },
-    { "name": "l", "param": "length", "type": "length" }
+    {
+      "name": "designation",
+      "param": "designation",
+      "type": "text"
+    },
+    {
+      "name": "a",
+      "param": "leg_a",
+      "type": "length"
+    },
+    {
+      "name": "b",
+      "param": "leg_b",
+      "type": "length"
+    },
+    {
+      "name": "t",
+      "param": "thickness",
+      "type": "length"
+    },
+    {
+      "name": "r1",
+      "param": "root_radius",
+      "type": "length"
+    },
+    {
+      "name": "r2",
+      "param": "toe_radius",
+      "type": "length"
+    },
+    {
+      "name": "l",
+      "param": "length",
+      "type": "length"
+    }
   ],
   "members": [
-    { "designation": "L 40x40x4", "a": 40, "b": 40, "t": 4, "l": 6000 },
-    { "designation": "L 50x50x5", "a": 50, "b": 50, "t": 5, "l": 6000 },
-    { "designation": "L 60x60x6", "a": 60, "b": 60, "t": 6, "l": 6000 },
-    { "designation": "L 70x70x7", "a": 70, "b": 70, "t": 7, "l": 6000 },
-    { "designation": "L 80x80x8", "a": 80, "b": 80, "t": 8, "l": 6000 }
+    {
+      "designation": "L 40x40x4",
+      "a": 40,
+      "b": 40,
+      "t": 4,
+      "r1": 6,
+      "r2": 3,
+      "l": 6000
+    },
+    {
+      "designation": "L 50x50x5",
+      "a": 50,
+      "b": 50,
+      "t": 5,
+      "r1": 7,
+      "r2": 3.5,
+      "l": 6000
+    },
+    {
+      "designation": "L 60x60x6",
+      "a": 60,
+      "b": 60,
+      "t": 6,
+      "r1": 8,
+      "r2": 4,
+      "l": 6000
+    },
+    {
+      "designation": "L 70x70x7",
+      "a": 70,
+      "b": 70,
+      "t": 7,
+      "r1": 9,
+      "r2": 4.5,
+      "l": 6000
+    },
+    {
+      "designation": "L 80x80x8",
+      "a": 80,
+      "b": 80,
+      "t": 8,
+      "r1": 10,
+      "r2": 5,
+      "l": 6000
+    }
   ]
 }
