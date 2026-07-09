@@ -3,24 +3,37 @@
 package build
 
 // Tapered-roller proportions. A tapered-roller bearing (ISO 355) is a cone (inner ring) and a cup
-// (outer ring) whose raceways are truncated cones, with tapered rollers between them tilted by the
-// contact angle. Only the boundary dimensions and the contact angle are tabulated, so the roller
-// and race geometry are derived from bore/outer_dia/width and the angle.
+// (outer ring) whose raceways are truncated cones, with tapered rollers between them. Its DEFINING
+// property is that the cup-raceway cone, cone-raceway cone and every roller cone share ONE common
+// apex O on the bearing axis — the on-apex condition that lets the rollers roll without sliding. So
+// every raceway and roller generator is the SAME ray from O; the roller diameter is derived from the
+// apex geometry, not chosen. Only the boundary dimensions and the contact angle are tabulated.
+//
+// With the ISO contact angle α = cup-raceway angle from the bearing axis, choose a small roller
+// half-angle β = α/8 (a modelled proportion, not tabulated); then the pitch-cone / roller-axis angle
+// is δ = α − β and the cone-raceway angle is γ_cone = α − 2β. See the geometry-math-advisor
+// derivation (#54): the earlier model offset the roller centre at tan α over the full span, which is
+// only parallel-not-coapical (the roller-pitch apex and race apexes land at different axial points).
 const (
 	// taperRollerAxialFraction is the roller's axial span as a fraction of the ring width.
 	taperRollerAxialFraction = "0.65"
-	// taperRollerBigFraction sizes the roller's big-end diameter as a fraction of the radial gap.
-	taperRollerBigFraction = "0.17"
-	// taperRollerSmallRatio is the small-end diameter as a fraction of the big-end diameter.
-	taperRollerSmallRatio = "0.62"
-	// The raceways are collinear with the roller surfaces (not merely tangent at the ends), so the
-	// clearance only has to cover the tessellation facet error, and that error is ASYMMETRIC. The
-	// cone is a revolved OUTER surface: its facets are chords that recede toward the axis, AWAY from
-	// the rollers, so a hairline clearance keeps the rollers reading as seated against the inner race.
-	// The cup is a revolved INNER surface: its facets bulge toward the axis, TOWARD the rollers, so it
-	// needs enough clearance to clear that intrusion or the ring pokes through the rollers.
+	// The three on-apex cone angles as fractions of the contact angle α, for a roller half-angle
+	// β = α/8: γ_cone = α − 2β = 0.75·α (cone raceway) and δ = α − β = 0.875·α (roller axis / pitch
+	// cone). The cup raceway is α itself, so it needs no fraction.
+	taperConeRayFraction = "0.75"  // γ_cone = α − 2β
+	taperAxisFraction    = "0.875" // δ = α − β
+	// The raceways are collinear with the roller surfaces (the shared apex rays), so the clearance
+	// only has to cover the tessellation facet error, and that error is ASYMMETRIC. The cone is a
+	// revolved OUTER surface: its facets recede toward the axis, AWAY from the rollers, so a hairline
+	// clearance keeps the rollers reading as seated. The cup is a revolved INNER surface: its facets
+	// bulge toward the rollers, so it needs more clearance or the ring pokes through the rollers.
 	taperConeClearance = "0.02" // fraction of big-end roller diameter, cone (inner race) side
 	taperCupClearance  = "0.05" // fraction of big-end roller diameter, cup (outer race) side
+	// Cone big-rib (retaining flange) proportions. The rib foot sits a small axial gap beyond the
+	// roller big end; the crest stands proud of the roller centre but clears the cup.
+	taperRibFootGap = "0.04" // rib-foot axial gap beyond the roller big end, as a fraction of width
+	taperRibProud   = "0.8"  // rib crest above the roller centre, as a fraction of roller_big_dia
+	taperRibCupGap  = "0.3"  // rib-crest-to-cup radial gap, as a fraction of roller_big_dia
 )
 
 // TaperedRoller generates a tapered-roller bearing (ISO 355, 302xx/303xx/313xx series)
@@ -53,53 +66,65 @@ func (TaperedRoller) Build(b *PartBuilder, rm ResolvedMember) error {
 	return b.revolveCup()
 }
 
-// deriveTaperParams adds the derived geometry: the pitch circle, the roller axial span, the big/
-// small roller diameters, the big/small roller-centre diameters (offset radially by the contact
-// angle so the roller tilts), and the four race diameters.
+// deriveTaperParams adds the on-apex derived geometry: the three raceway/roller cone angles, the
+// common apex arm, the roller-end stations measured from the apex, the raceway diameters as the
+// shared apex rays (2·ζ·tan γ), the roller centre/diameter (circles centred at the raceway radial
+// midpoint, so the roller touches both races at both ends), the cone big-rib bounds, and the ring
+// raceway diameters at the ring faces. Every raceway and roller generator is the SAME ray from the
+// apex, so the construction is provably on-apex (see the geometry-math-advisor derivation, #54).
 //
-// The raceways must be COLLINEAR with the roller surfaces, not merely tangent at the roller ends.
-// The roller inner-surface crest is cone_big at the big end (z = +roller_axial/2) and cone_small at
-// the small end (z = −roller_axial/2); the cone raceway is that same line, but the ring section
-// spans the full width, so the slope is extrapolated from the roller span (roller_axial) out to the
-// width — cone_half scales the half-spread by width/roller_axial. Setting the raceway only tangent
-// at the roller ends (the naive `roller_big_pos − roller_big_dia` at ±width/2) makes the raceway
-// slope shallower than the roller, so the tilted roller pokes through the ring near its ends. The
-// cup mirrors this on the outer surface. Each raceway is then offset by taper_clr (cone inward, cup
-// outward) so the rings sit just clear of the rollers.
+// The apex is far off-sketch (≈ p/tan δ ≈ 100+ mm), so it is never materialised as a point — only
+// the tan-expressions reference it. The roller diameter is DERIVED here (it falls out of the apex
+// rays), not chosen from the radial gap as the earlier parallel-not-coapical model did.
 func deriveTaperParams(b *PartBuilder) error {
-	derived := []struct{ name, expr string }{
-		{"pitch_dia", "(bore + outer_dia) / 2"},
-		{"roller_axial", "width * " + taperRollerAxialFraction},
-		{"roller_big_dia", raceGap + " * " + taperRollerBigFraction},
-		{"roller_small_dia", "roller_big_dia * " + taperRollerSmallRatio},
-		// The roller centre moves out by roller_axial·tan(angle) from small to big end, tilting it.
-		{"roller_big_pos", "pitch_dia + roller_axial * tan(contact_angle)"},
-		{"roller_small_pos", "pitch_dia - roller_axial * tan(contact_angle)"},
-		// Roller inner/outer crest diameters at the roller ends — the raceway tangent points.
-		{"cone_big", "roller_big_pos - roller_big_dia"},
-		{"cone_small", "roller_small_pos - roller_small_dia"},
-		{"cup_big", "roller_big_pos + roller_big_dia"},
-		{"cup_small", "roller_small_pos + roller_small_dia"},
-		// Asymmetric clearances so each raceway sits just off the rollers (see the constants).
-		{"cone_clr", "roller_big_dia * " + taperConeClearance},
-		{"cup_clr", "roller_big_dia * " + taperCupClearance},
-		// Raceway lines collinear with the roller surfaces, extrapolated from the roller span to the
-		// full ring width (width/roller_axial), then offset by the clearance (cone inward, cup outward).
-		{"cone_mid", "(cone_big + cone_small) / 2"},
-		{"cone_half", "((cone_big - cone_small) / 2) * (width / roller_axial)"},
-		{"cup_mid", "(cup_big + cup_small) / 2"},
-		{"cup_half", "((cup_big - cup_small) / 2) * (width / roller_axial)"},
-		{"cone_back_dia", "cone_mid + cone_half - cone_clr"},
-		{"cone_front_dia", "cone_mid - cone_half - cone_clr"},
-		{"cup_back_dia", "cup_mid + cup_half + cup_clr"},
-		{"cup_front_dia", "cup_mid - cup_half + cup_clr"},
-	}
-	for _, d := range derived {
+	for _, d := range taperDerivations() {
 		if err := b.DeriveParam(d.name, d.expr); err != nil {
 			return err
 		}
 	}
 	return nil
+}
+
+// taperDerivations lists the on-apex derived parameters in dependency order.
+func taperDerivations() []struct{ name, expr string } {
+	return []struct{ name, expr string }{
+		{"pitch_dia", "(bore + outer_dia) / 2"},
+		{"roller_axial", "width * " + taperRollerAxialFraction},
+		// On-apex cone angles: cup ray = α; roller half-angle β = α/8; cone ray = α−2β; axis δ = α−β.
+		{"cone_ray_angle", "contact_angle * " + taperConeRayFraction},
+		{"axis_angle", "contact_angle * " + taperAxisFraction},
+		// Common apex: the pitch cone meets the axis this far on the small-end side (apex never drawn).
+		{"apex_arm", "(pitch_dia / 2) / tan(axis_angle)"},
+		// Roller-end stations from the apex (big end farther out at +Z, small end nearer the apex).
+		{"zeta_big", "apex_arm + roller_axial / 2"},
+		{"zeta_small", "apex_arm - roller_axial / 2"},
+		// Raceway diameters at the roller ends = 2·ζ·tan γ — the SAME apex rays for races and rollers.
+		{"cone_big_dia", "2 * zeta_big * tan(cone_ray_angle)"},
+		{"cone_small_dia", "2 * zeta_small * tan(cone_ray_angle)"},
+		{"cup_big_dia", "2 * zeta_big * tan(contact_angle)"},
+		{"cup_small_dia", "2 * zeta_small * tan(contact_angle)"},
+		// Roller circles centred at the raceway radial midpoint (touch both races at both ends).
+		{"roller_big_pos", "(cone_big_dia + cup_big_dia) / 2"},
+		{"roller_small_pos", "(cone_small_dia + cup_small_dia) / 2"},
+		{"roller_big_dia", "(cup_big_dia - cone_big_dia) / 2"},
+		{"roller_small_dia", "(cup_small_dia - cone_small_dia) / 2"},
+		// Method-C large-end sphere radius (centred at the apex) — published for a future domed roller.
+		{"roller_sphere_r", "zeta_big / cos(contact_angle)"},
+		// Asymmetric tessellation clearances so each raceway sits just off the rollers (see constants).
+		{"cone_clr", "roller_big_dia * " + taperConeClearance},
+		{"cup_clr", "roller_big_dia * " + taperCupClearance},
+		// Cone big rib: foot a small axial gap beyond the roller big end; crest proud of the roller
+		// centre but clear of the cup (min guards a shallow bearing whose window would otherwise close).
+		{"rib_inner_z", "roller_axial / 2 + width * " + taperRibFootGap},
+		{"rib_crest_dia", "min(roller_big_pos + " + taperRibProud + " * roller_big_dia, " +
+			"cup_big_dia - " + taperRibCupGap + " * roller_big_dia)"},
+		// Ring raceway diameters at the ring faces = the apex rays, offset by the clearance. The cone
+		// runs from the small-end face to the rib foot; the cup spans the full width.
+		{"cone_bottom_dia", "2 * (apex_arm - width / 2) * tan(cone_ray_angle) - cone_clr"},
+		{"cone_rib_dia", "2 * (apex_arm + rib_inner_z) * tan(cone_ray_angle) - cone_clr"},
+		{"cup_bottom_dia", "2 * (apex_arm - width / 2) * tan(contact_angle) + cup_clr"},
+		{"cup_top_dia", "2 * (apex_arm + width / 2) * tan(contact_angle) + cup_clr"},
+	}
 }
 
 // patternTaperedRollers lofts one tapered roller — a frustum from the big-end circle (on the +Z
@@ -134,13 +159,16 @@ func (b *PartBuilder) patternTaperedRollers() error {
 	return b.PatternCircular(roller, "roller_count")
 }
 
-// revolveCone revolves the inner ring (straight bore, sloped outer raceway) about Z.
+// revolveCone revolves the inner ring (straight bore, sloped raceway, big-end retaining rib) about
+// Z. The raceway runs from the small-end face up to the rib foot; beyond it the rib rises to the
+// crest, guiding the roller big ends.
 func (b *PartBuilder) revolveCone() error {
 	sk, err := b.Sketch("XZ")
 	if err != nil {
 		return err
 	}
-	if err := sk.GroundedConeSection("bore", "cone_front_dia", "cone_back_dia", "width"); err != nil {
+	if err := sk.GroundedRibbedConeSection("bore", "cone_bottom_dia", "cone_rib_dia",
+		"rib_crest_dia", "rib_inner_z", "width"); err != nil {
 		return err
 	}
 	if err := sk.AssertFullyConstrained(); err != nil {
@@ -150,13 +178,14 @@ func (b *PartBuilder) revolveCone() error {
 	return err
 }
 
-// revolveCup revolves the outer ring (straight OD, sloped inner raceway) about Z.
+// revolveCup revolves the outer ring (straight OD, sloped inner raceway) about Z. The raceway is the
+// cup apex ray: cup_bottom_dia at the small-end face (−width/2), cup_top_dia at the big end.
 func (b *PartBuilder) revolveCup() error {
 	sk, err := b.Sketch("XZ")
 	if err != nil {
 		return err
 	}
-	if err := sk.GroundedCupSection("outer_dia", "cup_front_dia", "cup_back_dia", "width"); err != nil {
+	if err := sk.GroundedCupSection("outer_dia", "cup_bottom_dia", "cup_top_dia", "width"); err != nil {
 		return err
 	}
 	if err := sk.AssertFullyConstrained(); err != nil {
