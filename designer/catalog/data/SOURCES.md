@@ -183,24 +183,48 @@ mid-range of the published min/max), in millimetres.
   circular pattern of the ball complement.
 - **Representational** (per the milestone plan): the pitch-circle diameter, ball diameter and the two
   race diameters are **derived parameters** computed from bore/outer_dia by fixed fractions of the
-  radial gap (ball ≈ 0.3·(D−d); race faces inset ≈ 0.21·(D−d) from the pitch circle), so the whole
-  bearing re-drives with the size. Race grooves, cage and seals are a tracked refinement; the balls
-  sit as solids on the pitch circle between two solid annular rings.
+  radial gap (ball ≈ 0.28·(D−d)). Each race is set to **clear the ball crest**: a ball centred on the
+  pitch circle reaches pitch_dia ± ball_dia, and the race is pushed one clearance (≈ 0.012·(D−d))
+  beyond that crest, so the ring solids never overlap the balls (a race merely inset from the pitch
+  circle would swallow them). The whole bearing re-drives with the size. Race grooves, cage and seals
+  are a tracked refinement; the balls sit as solids on the pitch circle between two solid annular rings.
 
 ### `roller_bearing_iso15.json` — ISO 15 (cylindrical roller bearings, NU 2-series)
 - Bore d, outer diameter D and width B are the boundary dimensions tabulated in ISO 15 for the
   NU 2-series cylindrical roller bearings (e.g. NU205 → 25 × 52 × 15). These three per member are
   exact. The **roller count Z** is a representative value (ISO 15 tabulates only boundary
   dimensions), driving the circular pattern of the roller complement.
-- **Representational**: the pitch-circle diameter, roller diameter (≈ 0.3·(D−d)), roller length
-  (≈ 0.8·B) and the two race diameters are derived parameters, so the bearing re-drives with the
-  size. The rollers are straight cylinders standing on the pitch circle with their axes parallel to
-  the bearing axis; roller-end chamfers, the cage and the ring guide flanges are a tracked refinement.
-- The **tapered-roller** (ISO 355 cone/cup + angled frustum rollers) and **thrust** (ISO 104 two flat
-  washer races + balls) bearing variants are a tracked refinement: they need cone rings and off-plane
-  rolling elements. The two rolling-bearing families shipped (deep-groove ball, cylindrical roller)
-  and the plain bush cover the "rolling elements patterned by parameter" and "plain bush id/od/length"
-  acceptance criteria at the milestone's representational fidelity.
+- **Representational**: the pitch-circle diameter, roller diameter (≈ 0.28·(D−d)), roller length
+  (≈ 0.8·B) and the two race diameters (each set to clear the roller crest by ≈ 0.012·(D−d), as for
+  the ball bearing) are derived parameters, so the bearing re-drives with the size. The rollers are
+  straight cylinders standing on the pitch circle with their axes parallel to the bearing axis;
+  roller-end chamfers, the cage and the ring guide flanges are a tracked refinement.
+
+### `tapered_roller_iso355.json` — ISO 355 (tapered-roller bearings, 302xx/303xx series)
+- Bore d, outer diameter D, assembled width T and the **contact angle α** are the ISO 355 boundary
+  dimensions for the 302xx/303xx metric tapered-roller series (e.g. 30206 → 30 × 62 × 17.25, α = 14°).
+  These four per member are exact; the **roller count Z** is a representative value (ISO 355 tabulates
+  boundary dimensions and the angle, not the roller complement), driving the circular pattern.
+- **Representational**: a cone (inner ring) and a cup (outer ring) with truncated-cone raceways and a
+  circular pattern of tapered-frustum rollers between them, each roller tilted by the contact angle
+  (its centre moves out by roller_axial·tan α from the small to the big end). The roller diameters,
+  axial span (≈ 0.65·T) and the four race diameters are derived. The raceways are made **collinear
+  with the roller surfaces** — the raceway line through the roller-end crest points is extrapolated
+  from the roller axial span out to the full ring width, then offset by a small clearance (cone inward,
+  cup outward) — so the tilted rollers sit just clear of the rings instead of poking through them.
+  Roller-end sphere ends, the cage, the ribs and the exact on-apex geometry are a tracked refinement.
+
+### `angular_contact_iso15.json` — ISO 15 (angular-contact ball bearings, 72xx-B series)
+- Bore d, outer diameter D and width B are the ISO 15 boundary dimensions for the 72xx angular-contact
+  series (shared with the 62xx deep-groove boundary plan; e.g. 7206 → 30 × 62 × 16). The **contact
+  angle α** (40° for the B design) and the **ball count Z** are representative values; the boundary
+  dimensions are exact.
+- **Representational**: a plain inner ring and an outer ring whose inner raceway is **relieved to a low
+  shoulder on the front face** — opened outward, halfway to the outside diameter — so the front clears
+  the ball crest and exposes the balls (the counterbore that carries one-directional thrust and lets
+  the bearing be assembled). It is distinguished from the deep-groove bearing by that relieved face.
+  The ball and race diameters are derived as for the deep-groove bearing (races clear the ball crest).
+  Ground raceway grooves and the true tilted contact line are a tracked refinement.
 
 ## Plain Bearings
 
@@ -211,3 +235,13 @@ mid-range of the published min/max), in millimetres.
 - Built as a plain concentric sleeve (the tube path: outside diameter as a new solid, bore cut
   through the full length). The flanged-bush variant and the wrapped-bush split seam are a tracked
   refinement — this is the solid cylindrical bush.
+
+### `thrust_bearing_iso104.json` — ISO 104 (single-direction thrust ball bearings, 511xx)
+- Bore d, outer diameter D and total height H are the ISO 104 boundary dimensions for the 511xx
+  single-direction thrust ball bearing series (e.g. 51105 → 25 × 42 × 11). These three per member are
+  exact; the **ball count Z** is a representative value (ISO 104 tabulates only boundary dimensions).
+- **Representational**: a shaft washer and a housing washer (flat annular races) with a ball
+  complement between them on the pitch circle, the stack centred on the mid-plane. The ball diameter
+  (≈ 0.4·H) and washer thickness (≈ 0.28·H each) are derived so the two washers plus the ball leave a
+  small axial clearance — the balls sit clear of both washer faces rather than tangent to them.
+  Grooved raceways and the self-aligning seat are a tracked refinement.
