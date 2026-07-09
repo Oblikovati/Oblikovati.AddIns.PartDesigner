@@ -1,0 +1,26 @@
+{
+  "id": "ansi-b18-3-socket-screw",
+  "category": "Fasteners/Bolts/Socket Head",
+  "standard": "ASME B18.3",
+  "generator": "socket_screw",
+  "variant": "cylindrical",
+  "units": "in",
+  "keyColumns": ["thread", "l"],
+  "columns": [
+    { "name": "thread", "param": "thread", "type": "text" },
+    { "name": "D", "param": "nominal_dia", "type": "length" },
+    { "name": "A", "param": "head_dia", "type": "length" },
+    { "name": "H", "param": "head_height", "type": "length" },
+    { "name": "J", "param": "socket_across_flats", "type": "length" },
+    { "name": "T", "param": "socket_depth", "type": "length" },
+    { "name": "l", "param": "length", "type": "length" }
+  ],
+  "members": [
+    { "thread": "1/4-20", "D": 0.25, "A": 0.375, "H": 0.25, "J": 0.1875, "T": 0.12, "l": 1 },
+    { "thread": "5/16-18", "D": 0.3125, "A": 0.469, "H": 0.3125, "J": 0.25, "T": 0.151, "l": 1.25 },
+    { "thread": "3/8-16", "D": 0.375, "A": 0.5625, "H": 0.375, "J": 0.3125, "T": 0.182, "l": 1.5 },
+    { "thread": "1/2-13", "D": 0.5, "A": 0.75, "H": 0.5, "J": 0.375, "T": 0.245, "l": 2 },
+    { "thread": "5/8-11", "D": 0.625, "A": 0.9375, "H": 0.625, "J": 0.5, "T": 0.307, "l": 2.5 },
+    { "thread": "3/4-10", "D": 0.75, "A": 1.125, "H": 0.75, "J": 0.625, "T": 0.37, "l": 3 }
+  ]
+}

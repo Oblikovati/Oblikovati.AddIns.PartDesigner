@@ -67,7 +67,7 @@ func threadStudEnds(b *PartBuilder, rm ResolvedMember) error {
 	if err != nil {
 		return err
 	}
-	designation := metricThreadDesignation(rm)
+	designation := threadDesignation(rm)
 	if err := b.CosmeticThreadSpan(face, designation, "", "metal_thread_length"); err != nil {
 		return err
 	}

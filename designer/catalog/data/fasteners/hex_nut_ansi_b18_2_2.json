@@ -1,0 +1,22 @@
+{
+  "id": "ansi-b18-2-2-hex-nut",
+  "category": "Fasteners/Nuts/Hex",
+  "standard": "ASME B18.2.2",
+  "generator": "hex_nut",
+  "units": "in",
+  "keyColumns": ["thread"],
+  "columns": [
+    { "name": "thread", "param": "thread", "type": "text" },
+    { "name": "D", "param": "nominal_dia", "type": "length" },
+    { "name": "F", "param": "across_flats", "type": "length" },
+    { "name": "H", "param": "nut_height", "type": "length" }
+  ],
+  "members": [
+    { "thread": "1/4-20", "D": 0.25, "F": 0.4375, "H": 0.2188 },
+    { "thread": "5/16-18", "D": 0.3125, "F": 0.5, "H": 0.2656 },
+    { "thread": "3/8-16", "D": 0.375, "F": 0.5625, "H": 0.3281 },
+    { "thread": "1/2-13", "D": 0.5, "F": 0.75, "H": 0.4375 },
+    { "thread": "5/8-11", "D": 0.625, "F": 0.9375, "H": 0.5469 },
+    { "thread": "3/4-10", "D": 0.75, "F": 1.125, "H": 0.6406 }
+  ]
+}

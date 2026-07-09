@@ -20,6 +20,10 @@ type ResolvedMember struct {
 // Value returns a numeric cell of the member by column name (0 if absent).
 func (rm ResolvedMember) Value(column string) float64 { return rm.Member.Values[column] }
 
+// Label returns the member's text cell for a column (e.g. a grade or an explicit thread
+// designation), or "" when the column is absent or numeric.
+func (rm ResolvedMember) Label(column string) string { return rm.Member.Labels[column] }
+
 // PartGenerator builds one kind of standard part procedurally. Build assumes an active part
 // document (the placement service creates it) and drives the PartBuilder to publish the
 // member's parameters and realize a DOF-0 parametric part. Kind is the stable string a
