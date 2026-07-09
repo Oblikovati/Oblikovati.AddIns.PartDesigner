@@ -2,34 +2,41 @@
 
 package build
 
-// Thrust-bearing proportions. A single-direction thrust ball bearing (ISO 104) is two flat washer
-// races with a ball complement between them; only the boundary dimensions (bore, outer diameter,
-// total height) are tabulated, so the ball diameter and washer thickness are derived from the
-// height as fixed fractions — the balls fill most of the axial gap and each washer takes the rest.
+// Thrust-bearing proportions. A single-direction thrust ball bearing (ISO 104) is two washer races
+// with a ball complement between them; only the boundary dimensions (bore, outer diameter, total
+// height) are tabulated, so the ball diameter, groove radius and land offset are derived from the
+// height. Each washer carries a ground race groove on its ball-facing face: the groove arc is
+// concentric with the ball (centre on the mid-plane at the pitch radius), so the ball nests in it
+// with a uniform clearance and the two washers' grooves together cradle the ball — no boolean.
 const (
-	// thrustBallHeightFraction sizes the ball at a fraction of the total height. It is smaller than
-	// (1 − 2·thrustWasherFraction) so the ball crest stays clear of both washer faces instead of
-	// touching them (a tangent face interpenetrates the ball under tessellation).
-	thrustBallHeightFraction = "0.4"
-	// thrustWasherFraction sizes each washer's thickness as a fraction of the total height; the two
-	// washers plus the ball leave a small axial clearance rather than filling the height exactly.
-	thrustWasherFraction = "0.28"
+	// thrustBallHeightFraction sizes the ball at a fraction of the total height. The ball sinks into
+	// the two grooves, so it can be a larger fraction than the flat-washer model used, while still
+	// clearing its neighbours on the pitch circle across the whole 511xx range.
+	thrustBallHeightFraction = "0.45"
+	// thrustGrooveConformity is r_g / ball_dia — the groove arc as a conformity multiple of the ball
+	// diameter (design band 0.51–0.54), so r_g sits just outside the ball surface and it nests with a
+	// uniform clearance.
+	thrustGrooveConformity = "0.53"
+	// thrustLandFraction is land_offset / r_g: the ball-facing land face sits this fraction of the
+	// groove radius off the mid-plane, so the groove is a channel of depth (1 − thrustLandFraction)·r_g
+	// cut below the land, leaving positive inner/outer land annuli across the range.
+	thrustLandFraction = "0.7"
 )
 
 // ThrustBearing generates a single-direction thrust ball bearing (ISO 104, 511xx series)
-// representationally: a shaft washer and a housing washer (flat annular races) with a circular
-// pattern of balls between them on the pitch circle, the whole stack centred on the mid-plane so
-// the balls sit at z = 0 and each washer occupies one axial end. Bore, outer diameter and height
-// drive everything; the pitch/ball diameters and washer thickness are derived. Grooved raceways
-// and the alignment seat are a tracked refinement.
+// representationally: a shaft washer and a housing washer (annular races with a ground race groove
+// on each ball-facing face) with a circular pattern of balls between them on the pitch circle, the
+// whole stack centred on the mid-plane so the balls sit at z = 0 and each washer occupies one axial
+// end. Bore, outer diameter and height drive everything; the pitch/ball diameters, groove radius and
+// land offset are derived. The self-aligning sphered seat is a variant (532xx) not tabulated here.
 type ThrustBearing struct{}
 
 // Kind is the family `generator` binding for thrust ball bearings.
 func (ThrustBearing) Kind() string { return "thrust_bearing" }
 
-// Build publishes bore/outer_dia/height/ball_count, derives the pitch/ball diameters and washer
-// thickness, patterns the ball complement FIRST (while the balls are the only bodies, so the
-// pattern's whole-body copy does not replicate the washers), then extrudes the two washers.
+// Build publishes bore/outer_dia/height/ball_count, derives the pitch/ball diameters, groove radius
+// and land offset, patterns the ball complement FIRST (while the balls are the only bodies, so the
+// pattern's whole-body copy does not replicate the washers), then revolves the two grooved washers.
 func (ThrustBearing) Build(b *PartBuilder, rm ResolvedMember) error {
 	if err := b.PublishParams(rm); err != nil {
 		return err
@@ -40,22 +47,23 @@ func (ThrustBearing) Build(b *PartBuilder, rm ResolvedMember) error {
 	if err := b.patternBalls(); err != nil {
 		return err
 	}
-	// Shaft washer at the bottom end, housing washer at the top end; the balls sit between them.
-	if err := b.washerAt("-height / 2", "washer_thickness"); err != nil {
+	// Shaft washer below the mid-plane, housing washer above it; the balls nest in both grooves.
+	if err := b.revolveGroovedWasher(true); err != nil {
 		return err
 	}
-	return b.washerAt("height / 2 - washer_thickness", "washer_thickness")
+	return b.revolveGroovedWasher(false)
 }
 
 // deriveThrustParams adds the thrust bearing's derived parameters: the pitch circle, the ball
-// diameter (a fraction of the height) and the washer thickness (a fraction of the height). The two
-// washers plus the ball diameter sum to less than the height, so the balls sit clear of both washer
-// faces at the mid-plane rather than tangent to them.
+// diameter (a fraction of the height), the ground groove radius (a conformity multiple of the ball
+// diameter) and the land offset (the |z| of each washer's ball-facing land face, a fraction of the
+// groove radius, so the groove is a channel cut below the land that the ball nests in).
 func deriveThrustParams(b *PartBuilder) error {
 	derived := []struct{ name, expr string }{
 		{"pitch_dia", "(bore + outer_dia) / 2"},
 		{"ball_dia", "height * " + thrustBallHeightFraction},
-		{"washer_thickness", "height * " + thrustWasherFraction},
+		{"groove_radius", "ball_dia * " + thrustGrooveConformity},
+		{"land_offset", "groove_radius * " + thrustLandFraction},
 	}
 	for _, d := range derived {
 		if err := b.DeriveParam(d.name, d.expr); err != nil {
@@ -65,27 +73,18 @@ func deriveThrustParams(b *PartBuilder) error {
 	return nil
 }
 
-// washerAt extrudes one flat annular washer race (bore .. outer_dia) of the given thickness from a
-// work plane offset planeOffsetExpr along +Z: the outside diameter as a new solid, the bore cut
-// through the washer. The bore cut is a small central cylinder that never reaches the balls (they
-// sit at the pitch radius), so it removes only the washer's bore.
-func (b *PartBuilder) washerAt(planeOffsetExpr, thicknessExpr string) error {
-	outer, err := b.OffsetPlaneSketch(planeOffsetExpr)
+// revolveGroovedWasher revolves one washer race with a ground race groove on its ball-facing face:
+// a grooved washer meridian (back face → OD edge → lands → groove arc), revolved a full turn about
+// the Z axis. grooveDown picks the shaft (lower) washer; false the housing (upper) washer.
+func (b *PartBuilder) revolveGroovedWasher(grooveDown bool) error {
+	sk, err := b.Sketch("XZ")
 	if err != nil {
 		return err
 	}
-	if err := outer.GroundedCircle(0, 0, "outer_dia"); err != nil {
+	if err := sk.GroundedGroovedWasherSection("bore", "outer_dia", "pitch_dia", "groove_radius",
+		"land_offset", "height / 2", grooveDown); err != nil {
 		return err
 	}
-	if err := b.ExtrudeDirected(outer, thicknessExpr, "new", ""); err != nil {
-		return err
-	}
-	bore, err := b.OffsetPlaneSketch(planeOffsetExpr)
-	if err != nil {
-		return err
-	}
-	if err := bore.GroundedCircle(0, 0, "bore"); err != nil {
-		return err
-	}
-	return b.ExtrudeDirected(bore, thicknessExpr, "cut", "")
+	_, err = b.Revolve(sk, "origin/axis/z", "360 deg", "new")
+	return err
 }
