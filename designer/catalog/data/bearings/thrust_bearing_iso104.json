@@ -1,0 +1,27 @@
+{
+  "id": "iso104-thrust-ball-bearing",
+  "category": "Bearings/Thrust Bearings/Ball",
+  "standard": "ISO 104",
+  "generator": "thrust_bearing",
+  "units": "mm",
+  "keyColumns": ["designation"],
+  "columns": [
+    { "name": "designation", "param": "designation", "type": "text" },
+    { "name": "d", "param": "bore", "type": "length" },
+    { "name": "D", "param": "outer_dia", "type": "length" },
+    { "name": "H", "param": "height", "type": "length" },
+    { "name": "Z", "param": "ball_count", "type": "count" }
+  ],
+  "members": [
+    { "designation": "51100", "d": 10, "D": 24, "H": 9,  "Z": 11 },
+    { "designation": "51101", "d": 12, "D": 26, "H": 9,  "Z": 12 },
+    { "designation": "51102", "d": 15, "D": 28, "H": 9,  "Z": 13 },
+    { "designation": "51103", "d": 17, "D": 30, "H": 9,  "Z": 14 },
+    { "designation": "51104", "d": 20, "D": 35, "H": 10, "Z": 14 },
+    { "designation": "51105", "d": 25, "D": 42, "H": 11, "Z": 15 },
+    { "designation": "51106", "d": 30, "D": 47, "H": 11, "Z": 16 },
+    { "designation": "51107", "d": 35, "D": 52, "H": 12, "Z": 16 },
+    { "designation": "51108", "d": 40, "D": 60, "H": 13, "Z": 17 },
+    { "designation": "51110", "d": 50, "D": 70, "H": 14, "Z": 18 }
+  ]
+}
