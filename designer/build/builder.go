@@ -177,7 +177,16 @@ func (b *PartBuilder) ExtrudeNamed(sk *SketchContext, distanceExpr, operation, d
 // implied by the two parameter-driven diameters and the plane offset, so it re-drives with the
 // size — unlike an extrude taper, whose angle the host cannot express as a formula.
 func (b *PartBuilder) Loft(bottom, top *SketchContext, operation string) error {
-	_, err := client.AddFeature(b.api.Features(), featureargs.Loft{
+	_, err := b.LoftNamed(bottom, top, operation)
+	return err
+}
+
+// LoftNamed is Loft returning the created feature's name, so a lofted solid can be patterned. A
+// tapered roller is a frustum lofted between a large circle and a small circle on two offset planes
+// whose centres sit at different radii — an oblique cone tilted in the radial-axial plane — then
+// arrayed around the pitch circle.
+func (b *PartBuilder) LoftNamed(bottom, top *SketchContext, operation string) (string, error) {
+	res, err := client.AddFeature(b.api.Features(), featureargs.Loft{
 		Sections: []featureargs.LoftSection{
 			{SketchIndex: bottom.index, ProfileIndex: 0},
 			{SketchIndex: top.index, ProfileIndex: 0},
@@ -185,9 +194,9 @@ func (b *PartBuilder) Loft(bottom, top *SketchContext, operation string) error {
 		Operation: operation,
 	})
 	if err != nil {
-		return fmt.Errorf("loft sketch %d→%d (%s): %w", bottom.index, top.index, operation, err)
+		return "", fmt.Errorf("loft sketch %d→%d (%s): %w", bottom.index, top.index, operation, err)
 	}
-	return nil
+	return featureName(res), nil
 }
 
 // Revolve sweeps the sketch's first profile about axisRef ("origin/axis/z" for a ring, or

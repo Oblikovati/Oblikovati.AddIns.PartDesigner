@@ -45,7 +45,11 @@ func TestBallBearingBuildsRingsAndBalls(t *testing.T) {
 	assertParam(t, h.added, "width", "15 mm")
 	assertParam(t, h.added, "ball_count", "9")
 	assertParam(t, h.added, "pitch_dia", "(bore + outer_dia) / 2")
-	assertParam(t, h.added, "ball_dia", "(outer_dia - bore) * 0.3")
+	assertParam(t, h.added, "ball_dia", "(outer_dia - bore) * 0.28")
+	// Each race clears the ball crest (pitch_dia ± ball_dia) by a fraction of the gap, so the ring
+	// solids never overlap the balls.
+	assertParam(t, h.added, "outer_race_dia", "pitch_dia + ball_dia + (outer_dia - bore) * 0.012")
+	assertParam(t, h.added, "inner_race_dia", "pitch_dia - ball_dia - (outer_dia - bore) * 0.012")
 
 	if len(h.revolves) != 3 {
 		t.Fatalf("revolves = %d, want 3 (one ball + two rings)", len(h.revolves))

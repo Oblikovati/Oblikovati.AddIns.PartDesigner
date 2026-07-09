@@ -74,7 +74,7 @@ var builtinGenerators = []PartGenerator{
 	RoundBar{}, FlatBar{}, IBeam{}, Channel{}, Angle{}, Tee{}, HollowRect{}, HollowRound{},
 	Key{}, Pin{}, Circlip{},
 	HexBolt{}, SocketScrew{}, HexNut{}, Washer{}, Stud{},
-	BallBearing{}, RollerBearing{}, PlainBush{},
+	BallBearing{}, RollerBearing{}, ThrustBearing{}, TaperedRoller{}, AngularContact{}, PlainBush{},
 }
 
 // DefaultRegistry returns a registry with every built-in generator registered.

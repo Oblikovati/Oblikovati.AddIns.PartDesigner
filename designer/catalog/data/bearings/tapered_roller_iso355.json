@@ -1,0 +1,28 @@
+{
+  "id": "iso355-tapered-roller-bearing",
+  "category": "Bearings/Roller Bearings/Tapered",
+  "standard": "ISO 355",
+  "generator": "tapered_roller",
+  "units": "mm",
+  "keyColumns": ["designation"],
+  "columns": [
+    { "name": "designation", "param": "designation", "type": "text" },
+    { "name": "d", "param": "bore", "type": "length" },
+    { "name": "D", "param": "outer_dia", "type": "length" },
+    { "name": "T", "param": "width", "type": "length" },
+    { "name": "alpha", "param": "contact_angle", "type": "angle" },
+    { "name": "Z", "param": "roller_count", "type": "count" }
+  ],
+  "members": [
+    { "designation": "30204", "d": 20, "D": 47, "T": 15.25, "alpha": 14, "Z": 14 },
+    { "designation": "30205", "d": 25, "D": 52, "T": 16.25, "alpha": 14, "Z": 15 },
+    { "designation": "30206", "d": 30, "D": 62, "T": 17.25, "alpha": 14, "Z": 16 },
+    { "designation": "30207", "d": 35, "D": 72, "T": 18.25, "alpha": 14, "Z": 17 },
+    { "designation": "30208", "d": 40, "D": 80, "T": 19.75, "alpha": 14, "Z": 18 },
+    { "designation": "30302", "d": 15, "D": 42, "T": 14.25, "alpha": 11, "Z": 13 },
+    { "designation": "30304", "d": 20, "D": 52, "T": 16.25, "alpha": 11, "Z": 14 },
+    { "designation": "30305", "d": 25, "D": 62, "T": 18.25, "alpha": 11, "Z": 15 },
+    { "designation": "30306", "d": 30, "D": 72, "T": 20.75, "alpha": 11, "Z": 16 },
+    { "designation": "30308", "d": 40, "D": 90, "T": 25.25, "alpha": 12, "Z": 17 }
+  ]
+}

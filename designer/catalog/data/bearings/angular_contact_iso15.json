@@ -1,0 +1,27 @@
+{
+  "id": "iso15-angular-contact-ball-bearing",
+  "category": "Bearings/Ball Bearings/Angular Contact",
+  "standard": "ISO 15",
+  "generator": "angular_contact",
+  "units": "mm",
+  "keyColumns": ["designation"],
+  "columns": [
+    { "name": "designation", "param": "designation", "type": "text" },
+    { "name": "d", "param": "bore", "type": "length" },
+    { "name": "D", "param": "outer_dia", "type": "length" },
+    { "name": "B", "param": "width", "type": "length" },
+    { "name": "alpha", "param": "contact_angle", "type": "angle" },
+    { "name": "Z", "param": "ball_count", "type": "count" }
+  ],
+  "members": [
+    { "designation": "7200-B", "d": 10, "D": 30, "B": 9, "alpha": 40, "Z": 10 },
+    { "designation": "7201-B", "d": 12, "D": 32, "B": 10, "alpha": 40, "Z": 10 },
+    { "designation": "7202-B", "d": 15, "D": 35, "B": 11, "alpha": 40, "Z": 11 },
+    { "designation": "7203-B", "d": 17, "D": 40, "B": 12, "alpha": 40, "Z": 11 },
+    { "designation": "7204-B", "d": 20, "D": 47, "B": 14, "alpha": 40, "Z": 11 },
+    { "designation": "7205-B", "d": 25, "D": 52, "B": 15, "alpha": 40, "Z": 12 },
+    { "designation": "7206-B", "d": 30, "D": 62, "B": 16, "alpha": 40, "Z": 13 },
+    { "designation": "7207-B", "d": 35, "D": 72, "B": 17, "alpha": 40, "Z": 14 },
+    { "designation": "7208-B", "d": 40, "D": 80, "B": 18, "alpha": 40, "Z": 14 }
+  ]
+}
