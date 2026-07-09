@@ -4,18 +4,73 @@
   "standard": "EN 10365",
   "generator": "i_beam",
   "units": "mm",
-  "keyColumns": ["designation"],
+  "keyColumns": [
+    "designation"
+  ],
   "columns": [
-    { "name": "designation", "param": "designation", "type": "text" },
-    { "name": "h", "param": "height", "type": "length" },
-    { "name": "b", "param": "flange_width", "type": "length" },
-    { "name": "tw", "param": "web_thickness", "type": "length" },
-    { "name": "tf", "param": "flange_thickness", "type": "length" },
-    { "name": "l", "param": "length", "type": "length" }
+    {
+      "name": "designation",
+      "param": "designation",
+      "type": "text"
+    },
+    {
+      "name": "h",
+      "param": "height",
+      "type": "length"
+    },
+    {
+      "name": "b",
+      "param": "flange_width",
+      "type": "length"
+    },
+    {
+      "name": "tw",
+      "param": "web_thickness",
+      "type": "length"
+    },
+    {
+      "name": "tf",
+      "param": "flange_thickness",
+      "type": "length"
+    },
+    {
+      "name": "r",
+      "param": "root_radius",
+      "type": "length"
+    },
+    {
+      "name": "l",
+      "param": "length",
+      "type": "length"
+    }
   ],
   "members": [
-    { "designation": "HE 100 A", "h": 96, "b": 100, "tw": 5.0, "tf": 8.0, "l": 6000 },
-    { "designation": "HE 200 A", "h": 190, "b": 200, "tw": 6.5, "tf": 10.0, "l": 6000 },
-    { "designation": "HE 300 A", "h": 290, "b": 300, "tw": 8.5, "tf": 14.0, "l": 6000 }
+    {
+      "designation": "HE 100 A",
+      "h": 96,
+      "b": 100,
+      "tw": 5.0,
+      "tf": 8.0,
+      "r": 12,
+      "l": 6000
+    },
+    {
+      "designation": "HE 200 A",
+      "h": 190,
+      "b": 200,
+      "tw": 6.5,
+      "tf": 10.0,
+      "r": 18,
+      "l": 6000
+    },
+    {
+      "designation": "HE 300 A",
+      "h": 290,
+      "b": 300,
+      "tw": 8.5,
+      "tf": 14.0,
+      "r": 27,
+      "l": 6000
+    }
   ]
 }

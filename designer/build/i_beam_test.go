@@ -9,9 +9,9 @@ import (
 	"oblikovati.org/part-designer/designer/catalog"
 )
 
-// iBeamMember builds a synthetic resolved I-beam member: a text designation label plus the four
-// section dimensions and the stock length the generator drives.
-func iBeamMember(designation string, h, b, tw, tf, l float64) ResolvedMember {
+// iBeamMember builds a synthetic resolved I-beam member: a text designation label plus the five
+// section dimensions (including the root-fillet radius) and the stock length the generator drives.
+func iBeamMember(designation string, h, b, tw, tf, r, l float64) ResolvedMember {
 	fam := &catalog.Family{
 		ID: "t-ibeam", Generator: "i_beam", Units: catalog.UnitsMillimetre,
 		KeyColumns: []string{"designation"},
@@ -21,25 +21,26 @@ func iBeamMember(designation string, h, b, tw, tf, l float64) ResolvedMember {
 			{Name: "b", Param: "flange_width", Type: catalog.ColumnLength},
 			{Name: "tw", Param: "web_thickness", Type: catalog.ColumnLength},
 			{Name: "tf", Param: "flange_thickness", Type: catalog.ColumnLength},
+			{Name: "r", Param: "root_radius", Type: catalog.ColumnLength},
 			{Name: "l", Param: "length", Type: catalog.ColumnLength},
 		},
 		Members: []catalog.Member{{
 			Key:    "designation=" + designation,
-			Values: map[string]float64{"h": h, "b": b, "tw": tw, "tf": tf, "l": l},
+			Values: map[string]float64{"h": h, "b": b, "tw": tw, "tf": tf, "r": r, "l": l},
 			Labels: map[string]string{"designation": designation},
 		}},
 	}
 	return ResolvedMember{Family: fam, Member: fam.Members[0]}
 }
 
-// TestIBeamBuildsSectionExtrude is the C2 wide-flange acceptance check: the four section
-// parameters are published (the text designation is a label, not a param), the 12-vertex outline
-// is aligned to the axes and pinned by offset dimensions to the parameters, and it extrudes to
-// `length` as one new solid.
+// TestIBeamBuildsSectionExtrude is the C2 wide-flange acceptance check: the five section
+// parameters are published (the text designation is a label, not a param), the filleted outline is
+// aligned to the axes and pinned by offset dimensions to the parameters, its four root fillets
+// share one radius, and it extrudes to `length` as one new solid.
 func TestIBeamBuildsSectionExtrude(t *testing.T) {
 	h := &fakeHost{dof: 0}
 	if err := (IBeam{}).Build(newBuilder(h, catalog.UnitsMillimetre),
-		iBeamMember("IPE 200", 200, 100, 5.6, 8.5, 6000)); err != nil {
+		iBeamMember("IPE 200", 200, 100, 5.6, 8.5, 12, 6000)); err != nil {
 		t.Fatalf("Build error = %v", err)
 	}
 
@@ -47,6 +48,7 @@ func TestIBeamBuildsSectionExtrude(t *testing.T) {
 	assertParam(t, h.added, "flange_width", "100 mm")
 	assertParam(t, h.added, "web_thickness", "5.6 mm")
 	assertParam(t, h.added, "flange_thickness", "8.5 mm")
+	assertParam(t, h.added, "root_radius", "12 mm")
 	assertParam(t, h.added, "length", "6000 mm")
 	// The designation is a text label; it must not become a driving parameter.
 	for _, p := range h.added {
@@ -68,12 +70,21 @@ func TestIBeamBuildsSectionExtrude(t *testing.T) {
 			t.Errorf("offset dimension %q not applied; have %+v", expr, h.dimensions)
 		}
 	}
-	// 16 axis alignments + 1 origin fix.
+	// Four concave root fillets share one radius (EqualRadius chain of 3) driven by a single radius
+	// dimension, so every web-flange junction re-drives with root_radius.
+	if got := countKind(h.constraints, "equalRadius"); got != 3 {
+		t.Errorf("equalRadius constraints = %d, want 3 (chain the four root fillets)", got)
+	}
+	if !hasDimension(h.dimensions, "root_radius") {
+		t.Errorf("root-fillet radius dimension missing; have %+v", h.dimensions)
+	}
 	if got := countKind(h.constraints, "fix"); got != 1 {
 		t.Errorf("fix count = %d, want 1 (the grounded origin)", got)
 	}
-	if got := countKind(h.constraints, "horizontal") + countKind(h.constraints, "vertical"); got != 16 {
-		t.Errorf("axis alignments = %d, want 16 (I-section)", got)
+	// With host inference disabled every straight edge is oriented explicitly (6 H + 6 V) plus the
+	// 8 arc centre-pins (4 V + 4 H) — verified against the solver at DOF 0, redundant 0.
+	if got := countKind(h.constraints, "horizontal") + countKind(h.constraints, "vertical"); got != 20 {
+		t.Errorf("axis alignments = %d, want 20 (12 edges + 8 arc pins)", got)
 	}
 }
 
@@ -81,7 +92,7 @@ func TestIBeamBuildsSectionExtrude(t *testing.T) {
 func TestIBeamUnderConstrainedFails(t *testing.T) {
 	h := &fakeHost{dof: 5}
 	if err := (IBeam{}).Build(newBuilder(h, catalog.UnitsMillimetre),
-		iBeamMember("IPE 200", 200, 100, 5.6, 8.5, 6000)); err == nil {
+		iBeamMember("IPE 200", 200, 100, 5.6, 8.5, 12, 6000)); err == nil {
 		t.Fatal("Build accepted an under-constrained I-section; want an error")
 	}
 	if len(h.extrudes) != 0 {
@@ -99,7 +110,7 @@ func TestIBeamBuildErrorsPropagate(t *testing.T) {
 	for _, m := range methods {
 		h := &fakeHost{dof: 0, failMethod: m}
 		if err := (IBeam{}).Build(newBuilder(h, catalog.UnitsMillimetre),
-			iBeamMember("IPE 200", 200, 100, 5.6, 8.5, 6000)); err == nil {
+			iBeamMember("IPE 200", 200, 100, 5.6, 8.5, 12, 6000)); err == nil {
 			t.Errorf("failMethod %q: Build succeeded, want an error", m)
 		}
 	}

@@ -121,13 +121,15 @@ the inch designation instead of a metric d/P pair.
   does not fix a bar length, only the cross-section and its tolerances.
 
 ### `ipe_en10365.json`, `hea_en10365.json`, `heb_en10365.json` — EN 10365 (hot-rolled I / H sections)
-- Section dimensions h (height), b (flange width), tw (web thickness), tf (flange thickness) are
-  the nominal values tabulated in EN 10365:2017 for the IPE, HE A and HE B series (e.g. IPE 200 =
-  200/100/5.6/8.5; HE 200 B = 200/200/9.0/15.0). A representative subset of each series is included.
-- **Modelled sharp** (no root radius `r`): the generator builds a constant-thickness 12-vertex
-  I-outline. The EN root fillets (r ≈ 7–27 mm) are a deferred refinement — they add a small amount
-  of material at the web/flange junctions, so the extruded volume is marginally below the tabulated
-  sectional area × length. The overall depth, flange width and plate thicknesses are exact.
+- Section dimensions h (height), b (flange width), tw (web thickness), tf (flange thickness) and
+  the web/flange **root radius r** are the nominal values tabulated in EN 10365:2017 for the IPE,
+  HE A and HE B series (e.g. IPE 200 = 200/100/5.6/8.5, r 12; HE 200 B = 200/200/9.0/15.0, r 18).
+  Root radii by nominal height: IPE 100 → 7, 200 → 12, 300 → 15, 400 → 21; HE 100 → 12, 200 → 18,
+  300 → 27 (A and B share the same r per height). A representative subset of each series is included.
+- **Root fillets modelled** (#51): the generator builds the I-outline with a real concave quarter-
+  round fillet of radius `r` at each of the four web/flange junctions, so the extruded cross-section
+  matches the EN tabulated sectional area (e.g. IPE 200 → 28.48 cm², reproduced to ~0.01 %). The
+  overall depth, flange width and plate thicknesses are exact.
 - Length is a representative stock length (6000 mm), user-overridable.
 
 ### `w_aisc.json`, `c_aisc.json` — AISC (US wide-flange W and American Standard channel C shapes)
