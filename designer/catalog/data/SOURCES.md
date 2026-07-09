@@ -166,8 +166,14 @@ the inch designation instead of a metric d/P pair.
 - Height h (= flange width b) and thickness (web = flange = s) are the nominal values tabulated in
   EN 10055 for the equal-flange tee series (e.g. T 50 = 50/50/6/6). A representative subset
   (T 40…T 80) is included.
-- **Modelled sharp**: the root radius r1 and toe radius r2 are deferred; the depth, flange width
-  and thicknesses are exact. The section is symmetric about the Y axis (flange on top).
+- **Root fillet r1 modelled** (#51): the concave root fillet at each flange-stem junction is
+  r1 = 2 mm, per the Montanstahl "Equal Flange Tees" datasheet (EN 10055:1995 geometry), which
+  tabulates a 2 mm root radius across the T 20…T 100 range and whose published sectional areas are
+  reproduced by the two root fillets alone (e.g. T 50×50×6 → sharp 5.64 cm² + 2·r1²(1−π/4) =
+  5.66 cm², matching the tabulated 5.66 cm²). The flange **toes are left sharp**: EN 10055 rounds
+  them, but the source's tabulated area shows no toe-area removal (the toe radii net out below
+  tabulation precision), so modelling only the roots keeps the extruded area faithful to the
+  standard. The section is symmetric about the Y axis (flange on top).
 - Length is a representative stock length (6000 mm), user-overridable.
 
 ### `shs_en10219.json`, `rhs_en10219.json`, `chs_en10219.json` — EN 10219 (cold-formed hollow sections)
