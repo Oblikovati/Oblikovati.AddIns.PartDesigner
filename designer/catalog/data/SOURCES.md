@@ -155,8 +155,17 @@ mid-range of the published min/max), in millimetres.
 ### `key_din6885.json` — DIN 6885 (parallel keys)
 - Cross-section b × h from DIN 6885-1 (e.g. 8×7, 12×8, 20×12) with a representative length l from the
   standard length series. The section (width × height) and length are exact.
-- **Modelled square-ended** (DIN 6885 Form B): the Form A round ends and the gib head (DIN 6887) are
-  a tracked refinement. The key's cross-section is centred on the part origin.
+- **Modelled square-ended** (DIN 6885 Form B): the Form A round ends are a tracked refinement. The
+  key's cross-section is centred on the part origin.
+
+### `gib_head_key_din6887.json` — DIN 6887 (gib-head taper keys)
+- Width b, body height h and gib-nose height h2 from the DIN 6887 dimension table (e.g. 8×7 → h2=11,
+  16×10 → h2=16, 40×22 → h2=36); length l is a representative value from the standard length series.
+  The width, body height and nose height are grounded in the standard.
+- **Modelled from the length silhouette**: a body rectangle (length × h) with a raised nose rising to
+  h2 at the back face, extruded across the width. The 1:100 body taper is a tracked refinement (the
+  body is modelled at constant height h); DIN 6887's reduced table carries no nose-length column, so
+  the nose projection is a representative proportion (≈ 0.9·h2) and the nose radius is omitted.
 
 ### `dowel_iso2338.json` — ISO 2338 (cylindrical dowel pins)
 - Diameter d and length l from the ISO 2338 preferred sizes (e.g. 6 m6 × 30). Diameter and length
