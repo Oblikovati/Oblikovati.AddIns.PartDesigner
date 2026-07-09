@@ -1,0 +1,25 @@
+{
+  "id": "iso1234-split-pin",
+  "category": "Shaft Parts/Pins/Split",
+  "standard": "ISO 1234",
+  "generator": "split_pin",
+  "units": "mm",
+  "keyColumns": ["d", "l"],
+  "columns": [
+    { "name": "d", "param": "d", "type": "length" },
+    { "name": "a", "param": "end_offset", "type": "length" },
+    { "name": "b", "param": "eye_height", "type": "length" },
+    { "name": "c", "param": "eye_width", "type": "length" },
+    { "name": "l", "param": "length", "type": "length" }
+  ],
+  "members": [
+    { "d": 1.6, "a": 2.5, "b": 3.2, "c": 2.8, "l": 16 },
+    { "d": 2, "a": 2.5, "b": 4, "c": 3.6, "l": 20 },
+    { "d": 2.5, "a": 2.5, "b": 5, "c": 4.6, "l": 25 },
+    { "d": 3.2, "a": 3.2, "b": 6.4, "c": 5.8, "l": 32 },
+    { "d": 4, "a": 4, "b": 8, "c": 7.4, "l": 40 },
+    { "d": 5, "a": 4, "b": 10, "c": 9.2, "l": 50 },
+    { "d": 6.3, "a": 4, "b": 12.6, "c": 11.8, "l": 63 },
+    { "d": 8, "a": 4, "b": 16, "c": 15, "l": 80 }
+  ]
+}

@@ -76,7 +76,7 @@ func (r *Registry) Kinds() []string {
 // (structural, shaft parts, fasteners, bearings). New part types append here as they land.
 var builtinGenerators = []PartGenerator{
 	RoundBar{}, FlatBar{}, IBeam{}, Channel{}, Angle{}, Tee{}, HollowRect{}, HollowRound{},
-	Key{}, GibHeadKey{}, Pin{}, ClevisPin{}, Circlip{},
+	Key{}, GibHeadKey{}, Pin{}, ClevisPin{}, SplitPin{}, Circlip{},
 	HexBolt{}, SocketScrew{}, HexNut{}, Washer{}, Stud{},
 	BallBearing{}, RollerBearing{}, ThrustBearing{}, TaperedRoller{}, AngularContact{}, PlainBush{},
 }
