@@ -37,9 +37,11 @@ MCP bridge), not a CI test — CI runs the cgo-free unit suite (`go test ./desig
 
 `mcp.py` is a minimal self-contained MCP streamable-HTTP client (no third-party deps).
 
-## Known limitation
+## Note on reading results mid-recompute
 
-On small deep-groove ball bearings (e.g. 6204) the kernel's circular pattern can drop a
-single ball copy at tight ball spacing, so 8 balls render where `ball_count` is 9. The
-add-in requests the correct count via the `ball_count` parameter; the drop is a host-side
-pattern-robustness edge, not add-in logic. Larger sizes (e.g. 6205) render the full count.
+A part recomputes asynchronously off the session goroutine after Place, so its features and
+bodies appear incrementally. Always poll `analysis_mass_properties` until the volume is
+**stable** (the `settle()` helper) before reading `get_model_tree` / counting bodies —
+reading too early can catch a partial state (e.g. a bearing showing only its balls before the
+ring revolves have recomputed). Each rolling bearing's ball/roller count comes straight from
+the family's `ball_count`/`roller_count` column (e.g. deep-groove 6204 = 8 balls, 6205 = 9).
