@@ -72,13 +72,14 @@ func TestNotifyShowCommandReopensPanel(t *testing.T) {
 		"Notify(command.started) never re-showed the panel")
 }
 
-// TestNotifyIgnoresUnknownEvents ensures non-command events and unknown commands make no
-// host calls — the engine must not react to traffic it does not own.
+// TestNotifyIgnoresUnknownEvents ensures malformed events and unknown commands make no host
+// calls — the engine must not react to traffic it does not own. (document.activated IS owned —
+// it dispatches bindActiveDocument on its own goroutine; that path is covered synchronously in
+// binding_test.go, and is excluded here so this test makes no async host calls to race against.)
 func TestNotifyIgnoresUnknownEvents(t *testing.T) {
 	host := &fakeHost{}
 	e := NewEngine(host)
 
-	e.Notify([]byte(`{"type":"document.activated","id":7}`))
 	e.Notify([]byte(`not json`))
 	e.Notify([]byte(`{"type":"command.started","command":"SomeOther.Command"}`))
 
