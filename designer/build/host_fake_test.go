@@ -38,6 +38,7 @@ type fakeHost struct {
 	lofts        []featureargs.Loft                // every loft, in order
 	coils        []featureargs.Coil                // every coil, in order
 	revolves     []featureargs.Revolve             // every revolve, in order
+	sweeps       []featureargs.Sweep               // every sweep, in order
 	patterns     []wire.CircularPatternFeatureArgs // every circular pattern, in order
 	workPlanes   []wire.CreateWorkPlaneArgs        // every work plane created, in order
 	featureCount int                               // running count, to name each added feature
@@ -183,6 +184,10 @@ func (h *fakeHost) featureReply(req []byte) ([]byte, error) {
 		var rv featureargs.Revolve
 		_ = json.Unmarshal(args.Args, &rv)
 		h.revolves = append(h.revolves, rv)
+	case featureargs.KindSweep:
+		var sw featureargs.Sweep
+		_ = json.Unmarshal(args.Args, &sw)
+		h.sweeps = append(h.sweeps, sw)
 	case wire.FeatureKindPatternCircular:
 		var p wire.CircularPatternFeatureArgs
 		_ = json.Unmarshal(args.Args, &p)
@@ -191,7 +196,8 @@ func (h *fakeHost) featureReply(req []byte) ([]byte, error) {
 	h.featureCount++
 	return json.Marshal(struct {
 		Feature string `json:"feature"`
-	}{Feature: fmt.Sprintf("Feature%d", h.featureCount)})
+		Healthy bool   `json:"healthy"`
+	}{Feature: fmt.Sprintf("Feature%d", h.featureCount), Healthy: true})
 }
 
 // decode unmarshals a recorded request body into T (best-effort; malformed input yields the

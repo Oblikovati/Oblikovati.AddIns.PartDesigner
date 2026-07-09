@@ -255,6 +255,32 @@ func (b *PartBuilder) Coil(sk *SketchContext, heightExpr, revolutionsExpr string
 	return nil
 }
 
+// Sweep sweeps the profile sketch's first profile along an explicit 3D polyline PATH (points in
+// cm, model space) into a solid (operation new|join|cut) — the part sweep for a folded round-wire
+// part whose centreline is a computed rail rather than a sketch, e.g. a split pin's hairpin. The
+// profile plane must be perpendicular to the path's first segment (the sweep frame carries it along
+// the path, staying perpendicular). Returns the created feature name; errors if the sweep is
+// unhealthy (a self-intersecting path or a profile not on the start plane leaves no solid).
+func (b *PartBuilder) Sweep(profile *SketchContext, pathPoints [][]float64, operation string) (string, error) {
+	res, err := client.AddFeature(b.api.Features(), featureargs.Sweep{
+		SketchIndex: profile.index, ProfileIndex: 0,
+		PathPoints: pathPoints, Operation: operation,
+	})
+	if err != nil {
+		return "", fmt.Errorf("sweep sketch %d along %d-point path (%s): %w", profile.index, len(pathPoints), operation, err)
+	}
+	var out struct {
+		Feature string `json:"feature"`
+		Healthy bool   `json:"healthy"`
+		Reason  string `json:"reason"`
+	}
+	_ = json.Unmarshal(res, &out)
+	if !out.Healthy {
+		return "", fmt.Errorf("sweep sketch %d along %d-point path is unhealthy: %s", profile.index, len(pathPoints), out.Reason)
+	}
+	return out.Feature, nil
+}
+
 // CosmeticThread tags a cylindrical face (by reference key) with a representational, non-cut
 // thread of the given designation (e.g. "M8x1.25") — the Content-Center convention for
 // standard fasteners, which show thread lines without modelling the helical cut. The thread
