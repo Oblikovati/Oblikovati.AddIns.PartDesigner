@@ -136,9 +136,14 @@ the inch designation instead of a metric d/P pair.
 - Section dimensions d (depth), bf (flange width), tw (web thickness), tf (flange thickness) are the
   nominal values from the **AISC Shapes Database v15.0** (Steel Construction Manual), in inches — e.g.
   W8×31 = 8.00/8.00/0.285/0.435; C10×15.3 = 10.0/2.60/0.240/0.436. A representative subset is included.
-- **W shapes** have parallel flanges, so the constant-thickness model is dimensionally exact (only the
-  web/flange root fillets are omitted). **C shapes** have a tapered inner flange face; tf is the AISC
-  average flange thickness and the taper + root/toe radii are deferred (as with the EN UPN channel).
+- **W shapes** have parallel flanges, so the four web-flange **root fillets are modelled** (#51,
+  shared with the EN I-beam recipe). The fillet radius is derived from the AISC detailing dimension
+  as `root_radius = kdes − tf` (kdes = design distance from the outer flange face to the web toe of
+  the fillet), per the AISC Shapes Database v15.0 — e.g. W8×31 → kdes 0.829, tf 0.435 → r = 0.394 in.
+  Cross-checked against the published area: the modelled filleted W8×31 area is 9.12 in² vs the
+  tabulated 9.13 in². **C shapes** have a tapered inner flange face; tf is the AISC average flange
+  thickness and the taper + root/toe radii are deferred (as with the EN UPN channel — modelling
+  fillets on a sloped flange is incompatible with the axis-aligned centre-pinning fillet recipe).
 - Length is a representative stock length (240 in = 20 ft), user-overridable.
 
 ### `upn_en10279.json` — EN 10279 (hot-rolled taper-flange channels, UPN)
