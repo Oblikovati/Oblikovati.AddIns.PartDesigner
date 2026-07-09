@@ -8,12 +8,15 @@ package build
 // fractions of the radial gap. These place the balls on the pitch circle and leave each ring a
 // solid annulus the balls sit between, which reads correctly and re-drives with the size.
 const (
-	// ballGapFraction sizes the ball at a fraction of the radial gap (outer_dia − bore)/2, so a
-	// ball spans most of the space between the rings without touching either race face.
-	ballGapFraction = "0.3"
-	// raceInsetFraction is how far each ring's race face is set back from the pitch circle,
-	// as a fraction of the radial gap — clearance so the ring solids don't swallow the balls.
-	raceInsetFraction = "0.21"
+	// ballGapFraction sizes the ball diameter as a fraction of the radial gap (outer_dia − bore),
+	// small enough that each ring keeps a solid wall once its race clears the ball crest.
+	ballGapFraction = "0.28"
+	// raceClearanceFraction is the extra radial-gap fraction each race is set beyond the rolling
+	// element's crest circle, so the ring solid clears the element instead of overlapping it. The
+	// element crest sits at pitch_dia ± element_dia; the race is pushed one more clearance past that.
+	// Kept just large enough to clear the outer ring's inner-surface tessellation facets (which bulge
+	// toward the element) so the elements read as seated against the races, not floating with a gap.
+	raceClearanceFraction = "0.012"
 )
 
 // BallBearing generates a deep-groove ball bearing (ISO 15: 60/62/63 series) representationally: a
@@ -53,31 +56,36 @@ func (BallBearing) Build(b *PartBuilder, rm ResolvedMember) error {
 // scaled from — the space the rings and rolling elements share.
 const raceGap = "(outer_dia - bore)"
 
-// deriveRaceParams adds the ring diameters shared by every rolling bearing: the pitch circle
-// (midway between bore and outer diameter) and the two race diameters (the pitch circle inset by a
-// fraction of the gap, so each ring is a solid annulus clearing the rolling elements). Roller and
-// ball bearings both build their rings from these.
-func deriveRaceParams(b *PartBuilder) error {
-	derived := []struct{ name, expr string }{
-		{"pitch_dia", "(bore + outer_dia) / 2"},
-		{"inner_race_dia", "pitch_dia - " + raceGap + " * " + raceInsetFraction},
-		{"outer_race_dia", "pitch_dia + " + raceGap + " * " + raceInsetFraction},
-	}
-	for _, d := range derived {
-		if err := b.DeriveParam(d.name, d.expr); err != nil {
-			return err
-		}
-	}
-	return nil
+// derivePitchDia adds the pitch circle, midway between bore and outer diameter — the circle the
+// rolling elements are centred on. Every rolling bearing derives its ring and element geometry
+// from it.
+func derivePitchDia(b *PartBuilder) error {
+	return b.DeriveParam("pitch_dia", "(bore + outer_dia) / 2")
 }
 
-// deriveBearingParams adds the ball bearing's derived parameters: the shared race diameters plus
-// the ball diameter (a fraction of the radial gap).
-func deriveBearingParams(b *PartBuilder) error {
-	if err := deriveRaceParams(b); err != nil {
+// deriveRacesClearing adds the two race diameters so each ring solid just clears the named rolling-
+// element diameter rather than overlapping it. A rolling element centred on the pitch circle reaches
+// a crest circle of diameter pitch_dia ± element_dia; the race is set one raceClearanceFraction of
+// the gap beyond that crest, leaving a small clearance. The element diameter param must already be
+// derived. Both ball and roller bearings size their rings from this.
+func deriveRacesClearing(b *PartBuilder, elementDia string) error {
+	clr := raceGap + " * " + raceClearanceFraction
+	if err := b.DeriveParam("outer_race_dia", "pitch_dia + "+elementDia+" + "+clr); err != nil {
 		return err
 	}
-	return b.DeriveParam("ball_dia", raceGap+" * "+ballGapFraction)
+	return b.DeriveParam("inner_race_dia", "pitch_dia - "+elementDia+" - "+clr)
+}
+
+// deriveBearingParams adds the ball bearing's derived parameters: the pitch circle, the ball
+// diameter (a fraction of the radial gap), and the two race diameters set to clear the ball crest.
+func deriveBearingParams(b *PartBuilder) error {
+	if err := derivePitchDia(b); err != nil {
+		return err
+	}
+	if err := b.DeriveParam("ball_dia", raceGap+" * "+ballGapFraction); err != nil {
+		return err
+	}
+	return deriveRacesClearing(b, "ball_dia")
 }
 
 // revolveRing builds one ring as a solid of revolution: a rectangular radial section from innerDia

@@ -6,8 +6,9 @@ package build
 // radial gap. The rollers are straight cylinders standing on the pitch circle with their axis
 // parallel to the bearing axis.
 const (
-	// rollerGapFraction sizes the roller diameter as a fraction of the radial gap (outer_dia − bore)/2.
-	rollerGapFraction = "0.3"
+	// rollerGapFraction sizes the roller diameter as a fraction of the radial gap (outer_dia − bore),
+	// small enough that each ring keeps a solid wall once its race clears the roller crest.
+	rollerGapFraction = "0.28"
 	// rollerLengthFraction sizes the roller length as a fraction of the bearing width, leaving the
 	// small end clearances a real roller has to the ring guide flanges.
 	rollerLengthFraction = "0.8"
@@ -43,16 +44,20 @@ func (RollerBearing) Build(b *PartBuilder, rm ResolvedMember) error {
 	return b.revolveRing("outer_race_dia", "outer_dia")
 }
 
-// deriveRollerParams adds the roller bearing's derived parameters: the shared race diameters plus
-// the roller diameter (a fraction of the radial gap) and length (a fraction of the width).
+// deriveRollerParams adds the roller bearing's derived parameters: the pitch circle, the roller
+// diameter (a fraction of the radial gap) and length (a fraction of the width), and the two race
+// diameters set to clear the roller crest.
 func deriveRollerParams(b *PartBuilder) error {
-	if err := deriveRaceParams(b); err != nil {
+	if err := derivePitchDia(b); err != nil {
 		return err
 	}
 	if err := b.DeriveParam("roller_dia", raceGap+" * "+rollerGapFraction); err != nil {
 		return err
 	}
-	return b.DeriveParam("roller_length", "width * "+rollerLengthFraction)
+	if err := b.DeriveParam("roller_length", "width * "+rollerLengthFraction); err != nil {
+		return err
+	}
+	return deriveRacesClearing(b, "roller_dia")
 }
 
 // patternRollers extrudes one cylindrical roller (a circle of roller_dia at the pitch radius,

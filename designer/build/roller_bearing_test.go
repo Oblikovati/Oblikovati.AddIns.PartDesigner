@@ -41,8 +41,11 @@ func TestRollerBearingBuildsRollersAndRings(t *testing.T) {
 	}
 	assertParam(t, h.added, "bore", "25 mm")
 	assertParam(t, h.added, "roller_count", "12")
-	assertParam(t, h.added, "roller_dia", "(outer_dia - bore) * 0.3")
+	assertParam(t, h.added, "roller_dia", "(outer_dia - bore) * 0.28")
 	assertParam(t, h.added, "roller_length", "width * 0.8")
+	// Each race clears the roller crest (pitch_dia ± roller_dia) by a fraction of the gap.
+	assertParam(t, h.added, "outer_race_dia", "pitch_dia + roller_dia + (outer_dia - bore) * 0.012")
+	assertParam(t, h.added, "inner_race_dia", "pitch_dia - roller_dia - (outer_dia - bore) * 0.012")
 
 	if len(h.extrudes) != 1 {
 		t.Fatalf("extrudes = %d, want 1 (the roller)", len(h.extrudes))
