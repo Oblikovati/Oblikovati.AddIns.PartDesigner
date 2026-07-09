@@ -169,8 +169,18 @@ mid-range of the published min/max), in millimetres.
 
 ### `dowel_iso2338.json` — ISO 2338 (cylindrical dowel pins)
 - Diameter d and length l from the ISO 2338 preferred sizes (e.g. 6 m6 × 30). Diameter and length
-  are exact. The end lead-in chamfers, and the clevis-pin and cotter/split-pin forms, are a tracked
-  refinement (the dowel is modelled as a plain precise cylinder).
+  are exact. The end lead-in chamfers are a tracked refinement (the dowel is modelled as a plain
+  precise cylinder).
+
+### `clevis_pin_iso2341.json` — ISO 2341 (clevis pins)
+- Shank d, head diameter dk, head height k, cotter-hole diameter d1 and the hole end distance le
+  from the ISO 2341 table (e.g. d10 → dk18, k4, d1 3.2, le 4.5); length l is a representative value
+  from the standard series. Shank/head/hole diameters, head height and the hole end distance are
+  grounded in the standard.
+- **Modelled** as a flat cylindrical head + shank (as the hex bolt builds head + shank) with the
+  transverse cotter hole cut through the shank at le from the far end. The head-edge chamfer/dome is
+  a tracked refinement. The cotter/split-pin (ISO 1234) form is a folded round-wire part that needs
+  a part-level sweep-along-path (not yet in the API), tracked as a follow-up.
 
 ### `circlip_din471.json`, `circlip_din472.json` — DIN 471 / DIN 472 (retaining rings)
 - Keyed by nominal shaft (DIN 471, external) or bore (DIN 472, internal) diameter, with ring

@@ -1,0 +1,24 @@
+{
+  "id": "iso2341-clevis-pin",
+  "category": "Shaft Parts/Pins/Clevis",
+  "standard": "ISO 2341",
+  "generator": "clevis_pin",
+  "units": "mm",
+  "keyColumns": ["d", "l"],
+  "columns": [
+    { "name": "d", "param": "shank_dia", "type": "length" },
+    { "name": "dk", "param": "head_dia", "type": "length" },
+    { "name": "k", "param": "head_height", "type": "length" },
+    { "name": "d1", "param": "hole_dia", "type": "length" },
+    { "name": "le", "param": "hole_end_dist", "type": "length" },
+    { "name": "l", "param": "length", "type": "length" }
+  ],
+  "members": [
+    { "d": 6, "dk": 10, "k": 2, "d1": 1.6, "le": 3.2, "l": 20 },
+    { "d": 8, "dk": 14, "k": 3, "d1": 2, "le": 3.5, "l": 30 },
+    { "d": 10, "dk": 18, "k": 4, "d1": 3.2, "le": 4.5, "l": 40 },
+    { "d": 12, "dk": 20, "k": 4, "d1": 3.2, "le": 5.5, "l": 50 },
+    { "d": 16, "dk": 25, "k": 4.5, "d1": 4, "le": 6, "l": 60 },
+    { "d": 20, "dk": 30, "k": 5, "d1": 5, "le": 8, "l": 80 }
+  ]
+}
