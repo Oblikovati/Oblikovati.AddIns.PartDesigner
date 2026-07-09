@@ -64,6 +64,9 @@ func TestHollowRectBuildsTube(t *testing.T) {
 	assertParam(t, h.added, "height", "60 mm")
 	assertParam(t, h.added, "thickness", "5 mm")
 	assertParam(t, h.added, "length", "6000 mm")
+	// The cold-formed corner radii are derived from the wall: outer ≈ 2·t, inner = outer − t = t.
+	assertParam(t, h.added, "outer_radius", "2 * (thickness)")
+	assertParam(t, h.added, "inner_radius", "thickness")
 
 	if len(h.extrudes) != 2 {
 		t.Fatalf("extrudes = %d, want 2 (outer new + inner cut)", len(h.extrudes))
@@ -74,10 +77,71 @@ func TestHollowRectBuildsTube(t *testing.T) {
 	if h.extrudes[1].Operation != "cut" || h.extrudes[1].Distance != "length" {
 		t.Errorf("inner extrude = %+v, want length/cut", h.extrudes[1])
 	}
-	// The inner rectangle is inset by the wall thickness on every side.
-	if !hasDimension(h.dimensions, "width - 2 * (thickness)") ||
-		!hasDimension(h.dimensions, "height - 2 * (thickness)") {
-		t.Errorf("inner-wall dimensions missing; have %+v", h.dimensions)
+	// Each rounded rectangle centres its four edges by half-width/half-height offsets from the
+	// grounded origin; the inner one is inset by the wall thickness on every side.
+	for _, expr := range []string{
+		"(width) / 2", "(height) / 2",
+		"(width - 2 * (thickness)) / 2", "(height - 2 * (thickness)) / 2",
+	} {
+		if !hasDimension(h.dimensions, expr) {
+			t.Errorf("edge-offset dimension %q missing; have %+v", expr, h.dimensions)
+		}
+	}
+	// Each corner is a real quarter-round: the four arcs share one radius (EqualRadius ×3 per
+	// rectangle) driven by a single radius dimension, for two rectangles.
+	if got := countConstraintKind(h.constraints, "equalRadius"); got != 6 {
+		t.Errorf("equalRadius constraints = %d, want 6 (3 per rounded rectangle)", got)
+	}
+	if !hasDimension(h.dimensions, "outer_radius") || !hasDimension(h.dimensions, "inner_radius") {
+		t.Errorf("corner-radius dimensions missing; have %+v", h.dimensions)
+	}
+}
+
+// countConstraintKind counts recorded geometric constraints of one kind.
+func countConstraintKind(kinds []string, want string) int {
+	n := 0
+	for _, k := range kinds {
+		if k == want {
+			n++
+		}
+	}
+	return n
+}
+
+// TestRoundedRectangleFullyConstrains checks GroundedRoundedRectangle emits a closed
+// four-line/four-arc outline pinned to DOF 0: the loop is closed by eight coincidences, each arc's
+// two radii are axis-aligned (four horizontal + four vertical), and the size is driven by one
+// radius dimension plus four edge offsets — no free sketch-fillet arcs.
+func TestRoundedRectangleFullyConstrains(t *testing.T) {
+	h := &fakeHost{dof: 0}
+	b := newBuilder(h, catalog.UnitsMillimetre)
+	sk, err := b.Sketch("XY")
+	if err != nil {
+		t.Fatalf("Sketch error = %v", err)
+	}
+	if err := sk.GroundedRoundedRectangle("width", "height", "corner_r"); err != nil {
+		t.Fatalf("GroundedRoundedRectangle error = %v", err)
+	}
+	// Closed loop: edge→arc→edge around the outline is eight coincident joins.
+	if got := countConstraintKind(h.constraints, "coincident"); got != 8 {
+		t.Errorf("coincident joins = %d, want 8 (closed four-edge/four-arc loop)", got)
+	}
+	// Each of the four arcs pins one horizontal and one vertical radius (centre→endpoint).
+	if got := countConstraintKind(h.constraints, "horizontal"); got != 4 {
+		t.Errorf("horizontal arc radii = %d, want 4", got)
+	}
+	if got := countConstraintKind(h.constraints, "vertical"); got != 4 {
+		t.Errorf("vertical arc radii = %d, want 4", got)
+	}
+	if got := countConstraintKind(h.constraints, "equalRadius"); got != 3 {
+		t.Errorf("equalRadius constraints = %d, want 3 (chain the four corners)", got)
+	}
+	if !hasDimension(h.dimensions, "corner_r") {
+		t.Errorf("corner-radius dimension missing; have %+v", h.dimensions)
+	}
+	// One radius + four edge offsets = five dimensions total; no more (nothing over-dimensioned).
+	if len(h.dimensions) != 5 {
+		t.Errorf("dimensions = %d, want 5 (one radius + four edge offsets)", len(h.dimensions))
 	}
 }
 
