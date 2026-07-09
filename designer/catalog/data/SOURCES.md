@@ -193,8 +193,8 @@ the inch designation instead of a metric d/P pair.
 
 ### `dowel_iso2338.json` — ISO 2338 (cylindrical dowel pins)
 - Diameter d and length l from the ISO 2338 preferred sizes (e.g. 6 m6 × 30). Diameter and length
-  are exact. The end lead-in chamfers are a tracked refinement (the dowel is modelled as a plain
-  precise cylinder).
+  are exact. Revolved from a chamfered rod section with a 45° lead-in chamfer at each end (a
+  representative proportion, ≈ 0.1·d, since the standard gives a range).
 
 ### `clevis_pin_iso2341.json` — ISO 2341 (clevis pins)
 - Shank d, head diameter dk, head height k, cotter-hole diameter d1 and the hole end distance le
@@ -221,8 +221,8 @@ Authored in inches (`"units": "in"`) over the same `pin` / `key` / `circlip` gen
 metric families.
 
 - `dowel_pin_ansi_b18_8.json` — **ASME B18.8.2** hardened ground machine dowel pins; nominal
-  diameter (1/8 … 1/2) and a representative length. Modelled as a plain precise cylinder (end
-  chamfers are a tracked refinement, as for the ISO 2338 dowel).
+  diameter (1/8 … 1/2) and a representative length. Revolved with a 45° lead-in chamfer at each end,
+  as for the ISO 2338 dowel.
 - `square_key_ansi_b17.json` — **ASME B17.1** square parallel keys; square cross-section b × b
   (1/8 … 1/2) and a representative length. Square-ended (as DIN 6885 Form B).
 - `circlip_ansi_external.json` — **ASME B27.7** external (shaft) retaining rings; nominal shaft

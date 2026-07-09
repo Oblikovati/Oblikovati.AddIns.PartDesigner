@@ -85,6 +85,67 @@ func (s *SketchContext) GroundedOffsetCircle(centreRadiusExpr, diameterExpr stri
 	return nil
 }
 
+// GroundedChamferedRodSection builds the half-section a chamfered cylindrical pin is revolved from,
+// on the XZ plane (X radial, Z axial): a rectangle from the axis (r=0) out to diameter/2, spanning
+// z=0..length, with its two outer corners (the pin ends) chamfered at 45° by chamferExpr. Points
+// P0..P5 run from the axis-bottom: P0(0,0), P1(d/2−c,0), P2(d/2,c), P3(d/2,length−c), P4(d/2−c,
+// length), P5(0,length). It is fully constrained to DOF 0; revolving it 360° about the Z axis (the
+// P5→P0 edge on r=0) yields a cylinder with a lead-in chamfer at each end. The two chamfer edges are
+// left as free diagonals pinned only by their endpoints (a 45° chamfer has equal legs, so each
+// hypotenuse is chamfer·√2).
+func (s *SketchContext) GroundedChamferedRodSection(diameterExpr, lengthExpr, chamferExpr string) error {
+	// Seeds set only the branch/topology; the constraints below drive the real size (cm-scale).
+	pts := [][]float64{{0, 0}, {0.4, 0}, {0.5, 0.1}, {0.5, 3.9}, {0.4, 4}, {0, 4}}
+	p, e, err := s.closedPolyline(pts)
+	if err != nil {
+		return err
+	}
+	return s.constrainChamferedRod(p, e, diameterExpr, lengthExpr, chamferExpr)
+}
+
+// constrainChamferedRod pins the six-point rod half-section to DOF 0 (see GroundedChamferedRodSection
+// for the point layout). e[i] joins p[i]→p[i+1]; e[2] is the right (outer-radius) side.
+func (s *SketchContext) constrainChamferedRod(p, e []uint64, dia, length, chamfer string) error {
+	con := s.b.api.Sketch().Constrain(s.index)
+	if _, err := con.Fix(p[0]); err != nil {
+		return fmt.Errorf("fix chamfered-rod axis corner: %w", err)
+	}
+	// Bottom & top edges horizontal, axis & outer-radius edges vertical; the two chamfers stay free.
+	horiz := [][]uint64{{p[0], p[1]}, {p[4], p[5]}}
+	vert := [][]uint64{{p[5], p[0]}, {p[2], p[3]}}
+	if err := alignLevels(con, horiz, vert); err != nil {
+		return err
+	}
+	return s.dimensionChamferedRod(p, e, dia, length, chamfer)
+}
+
+// dimensionChamferedRod sizes the rod half-section: length up the axis, radius to the outer edge, the
+// two chamfer feet (radius − chamfer), and the two 45° chamfer hypotenuses (chamfer·√2).
+func (s *SketchContext) dimensionChamferedRod(p, e []uint64, dia, length, chamfer string) error {
+	dim := s.b.api.Sketch().Dimension(s.index)
+	half := "(" + dia + ") / 2"
+	edge := half + " - (" + chamfer + ")"
+	hyp := "(" + chamfer + ") * sqrt(2)"
+	if _, err := dim.Distance(p[0], p[5], length); err != nil {
+		return fmt.Errorf("dimension rod length: %w", err)
+	}
+	if _, err := dim.Offset(p[0], e[2], half); err != nil {
+		return fmt.Errorf("dimension rod radius: %w", err)
+	}
+	rodDims := []struct {
+		a, b uint64
+		expr string
+	}{
+		{p[0], p[1], edge}, {p[4], p[5], edge}, {p[1], p[2], hyp}, {p[3], p[4], hyp},
+	}
+	for _, d := range rodDims {
+		if _, err := dim.Distance(d.a, d.b, d.expr); err != nil {
+			return fmt.Errorf("dimension chamfered-rod %q: %w", d.expr, err)
+		}
+	}
+	return nil
+}
+
 // GroundedBallSection builds the half-disk a bearing ball is revolved from: a semicircular arc of
 // diameter diameterExpr centred on the X axis at radius centreRadiusExpr from the origin, bulging
 // to +Y, closed by its diameter line back along the X axis. Revolved 360° about the X axis (which
