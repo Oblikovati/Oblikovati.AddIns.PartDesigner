@@ -1,0 +1,22 @@
+{
+  "id": "din6887-gib-head-key",
+  "category": "Shaft Parts/Keys/Gib Head",
+  "standard": "DIN 6887",
+  "generator": "gib_head_key",
+  "units": "mm",
+  "keyColumns": ["b", "h", "l"],
+  "columns": [
+    { "name": "b", "param": "width", "type": "length" },
+    { "name": "h", "param": "height", "type": "length" },
+    { "name": "h2", "param": "head_height", "type": "length" },
+    { "name": "l", "param": "length", "type": "length" }
+  ],
+  "members": [
+    { "b": 8, "h": 7, "h2": 11, "l": 32 },
+    { "b": 12, "h": 8, "h2": 12, "l": 45 },
+    { "b": 16, "h": 10, "h2": 16, "l": 56 },
+    { "b": 18, "h": 11, "h2": 18, "l": 70 },
+    { "b": 32, "h": 18, "h2": 28, "l": 140 },
+    { "b": 40, "h": 22, "h2": 36, "l": 180 }
+  ]
+}

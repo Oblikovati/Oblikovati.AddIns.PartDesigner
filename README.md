@@ -52,7 +52,7 @@ live-validated over the MCP bridge.
 | --- | --- | --- |
 | Fasteners | Hex bolt (ISO 4017/4014, DIN 933/931) · Socket head & countersunk screw (ISO 4762/10642, DIN 912) · Hex nut (ISO 4032/4035, DIN 934) · Washer plain & spring (ISO 7089, DIN 125/127) · Stud & threaded rod (DIN 939/976) | `hex_bolt` `socket_screw` `hex_nut` `washer` `stud` |
 | Structural | Round & flat bar (ISO 1035, EN 10058) · I-beams (EN IPE/HE A/HE B, AISC W) · Channels (EN UPN, AISC C) · Angles L (EN 10056) · Tees (EN 10055) · Hollow SHS/RHS/CHS (EN 10219) | `round_bar` `flat_bar` `i_beam` `channel` `angle` `tee` `hollow_rect` `hollow_round` |
-| Shaft Parts | Parallel key (DIN 6885) · Dowel pin (ISO 2338) · Retaining ring (DIN 471/472) | `key` `pin` `circlip` |
+| Shaft Parts | Parallel key (DIN 6885) · Gib-head key (DIN 6887) · Dowel pin (ISO 2338) · Retaining ring (DIN 471/472) | `key` `gib_head_key` `pin` `circlip` |
 | Bearings | Deep-groove ball bearing (ISO 15) · Cylindrical roller bearing (ISO 15) · Plain sleeve bush (ISO 4379) | `ball_bearing` `roller_bearing` `plain_bush` |
 
 Every table's numbers are grounded in the cited standard — provenance in
