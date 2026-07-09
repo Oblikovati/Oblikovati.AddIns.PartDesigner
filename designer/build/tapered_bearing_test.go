@@ -42,13 +42,18 @@ func TestTaperedRollerBuildsRollersAndRaces(t *testing.T) {
 	assertParam(t, h.added, "bore", "30 mm")
 	assertParam(t, h.added, "contact_angle", "14 deg")
 	assertParam(t, h.added, "roller_count", "16")
-	assertParam(t, h.added, "roller_big_dia", "(outer_dia - bore) * 0.17")
-	assertParam(t, h.added, "roller_big_pos", "pitch_dia + roller_axial * tan(contact_angle)")
-	// The raceways are collinear with the roller surfaces: the half-spread is scaled from the roller
-	// axial span out to the full ring width, then offset by the clearance (cone in, cup out).
-	assertParam(t, h.added, "cone_half", "((cone_big - cone_small) / 2) * (width / roller_axial)")
-	assertParam(t, h.added, "cone_back_dia", "cone_mid + cone_half - cone_clr")
-	assertParam(t, h.added, "cup_back_dia", "cup_mid + cup_half + cup_clr")
+	// On-apex angles: cone ray = 0.75·α, roller axis δ = 0.875·α; the apex arm is p/tan δ.
+	assertParam(t, h.added, "cone_ray_angle", "contact_angle * 0.75")
+	assertParam(t, h.added, "axis_angle", "contact_angle * 0.875")
+	assertParam(t, h.added, "apex_arm", "(pitch_dia / 2) / tan(axis_angle)")
+	// Raceway diameters are the shared apex rays 2·ζ·tan γ; the roller diameter falls out of them.
+	assertParam(t, h.added, "cup_big_dia", "2 * zeta_big * tan(contact_angle)")
+	assertParam(t, h.added, "roller_big_dia", "(cup_big_dia - cone_big_dia) / 2")
+	assertParam(t, h.added, "roller_big_pos", "(cone_big_dia + cup_big_dia) / 2")
+	// The cone big rib: foot beyond the roller big end, crest proud of the roller but clear of the cup.
+	assertParam(t, h.added, "rib_inner_z", "roller_axial / 2 + width * 0.04")
+	assertParam(t, h.added, "rib_crest_dia",
+		"min(roller_big_pos + 0.8 * roller_big_dia, cup_big_dia - 0.3 * roller_big_dia)")
 
 	if len(h.lofts) != 1 {
 		t.Fatalf("lofts = %d, want 1 (the tapered roller)", len(h.lofts))

@@ -109,3 +109,95 @@ func taperRingSeeds(innerVertical bool) [][]float64 {
 	// straight OD at 3.0, sloped inner from 2.5 to 2.0
 	return [][]float64{{2.5, -0.5}, {3.0, -0.5}, {3.0, 0.5}, {2.0, 0.5}}
 }
+
+// GroundedRibbedConeSection builds the inner ring ("cone") of a tapered-roller bearing with a
+// big-end retaining rib: a 6-vertex L-profile with a straight bore, a sloped raceway running from
+// the small-end face up to the rib foot, and a rib that rises to the crest and fills out to the
+// big-end face. Revolved about Z it yields a cone ring whose raised big-end flange guides the roller
+// big ends. bore is the straight bore diameter; raceSmallDia / raceRibDia are the raceway diameters
+// at the small-end face and at the rib foot; ribCrestDia is the flange crest diameter; ribInnerZ is
+// the rib-foot axial position (the roller big ends stop just short of it). Fully constrained (DOF 0).
+//
+// The rib foot sits axially beyond the roller big end, so the revolved rib solid stays disjoint from
+// the patterned rollers (see the geometry-math-advisor rib derivation, #54).
+func (s *SketchContext) GroundedRibbedConeSection(bore, raceSmallDia, raceRibDia, ribCrestDia, ribInnerZ, width string) error {
+	pts, edges, err := s.closedPolyline(ribbedConeSeeds())
+	if err != nil {
+		return err
+	}
+	o, err := s.groundedOrigin()
+	if err != nil {
+		return err
+	}
+	if err := s.orientRibbedCone(pts); err != nil {
+		return err
+	}
+	return s.pinRibbedCone(o, pts, edges, ribbedConeDims{
+		bore: bore, raceSmall: raceSmallDia, raceRib: raceRibDia,
+		ribCrest: ribCrestDia, ribInnerZ: ribInnerZ, width: width,
+	})
+}
+
+// ribbedConeDims bundles the six parameter expressions the ribbed cone section pins, keeping
+// pinRibbedCone within the argument budget while naming each role at the call site.
+type ribbedConeDims struct {
+	bore, raceSmall, raceRib, ribCrest, ribInnerZ, width string
+}
+
+// ribbedConeSeeds returns the 6 outline corners (cm), CCW from the small-end bore corner: bore/small
+// face, raceway small, raceway at the rib foot, rib crest foot, rib crest / big face, big-end bore.
+// Seeds only pick the branch; the dimensions drive the real geometry.
+func ribbedConeSeeds() [][]float64 {
+	return [][]float64{
+		{1.5, -0.86}, // A bore, small-end face
+		{1.8, -0.86}, // B raceway, small-end face
+		{2.0, 0.63},  // C raceway at the rib foot
+		{2.67, 0.63}, // D rib crest foot
+		{2.67, 0.86}, // E rib crest, big-end face
+		{1.5, 0.86},  // F bore, big-end face
+	}
+}
+
+// orientRibbedCone aligns the axis-parallel and radial edges: the small-end face, rib inner face and
+// big-end face share their axial level (Horizontal); the rib crest and the bore share their radius
+// (Vertical). The sloped raceway (B→C) is left free, pinned by its endpoint radii.
+func (s *SketchContext) orientRibbedCone(p []uint64) error {
+	con := s.b.api.Sketch().Constrain(s.index)
+	horiz := [][2]uint64{{p[0], p[1]}, {p[2], p[3]}, {p[4], p[5]}} // small face, rib inner face, big face
+	vert := [][2]uint64{{p[3], p[4]}, {p[5], p[0]}}                // rib crest, bore
+	for _, h := range horiz {
+		if _, err := con.Horizontal(h[0], h[1]); err != nil {
+			return fmt.Errorf("orient ribbed cone edge %d-%d horizontal: %w", h[0], h[1], err)
+		}
+	}
+	for _, v := range vert {
+		if _, err := con.Vertical(v[0], v[1]); err != nil {
+			return fmt.Errorf("orient ribbed cone edge %d-%d vertical: %w", v[0], v[1], err)
+		}
+	}
+	return nil
+}
+
+// pinRibbedCone pins every edge to its parameter: the three faces to their axial levels, the bore
+// and rib crest to their radii, and the two raceway corners by their radial width from the bore (B)
+// and from the rib crest (C). Edge order matches ribbedConeSeeds (edge i joins point i to i+1).
+func (s *SketchContext) pinRibbedCone(o uint64, p, e []uint64, d ribbedConeDims) error {
+	dim := s.b.api.Sketch().Dimension(s.index)
+	offsets := []edgeOffset{
+		{e[0], half(d.width)},    // small-end face at −width/2
+		{e[4], half(d.width)},    // big-end face at +width/2
+		{e[2], d.ribInnerZ},      // rib inner face at +rib_inner_z
+		{e[5], half(d.bore)},     // bore at bore/2
+		{e[3], half(d.ribCrest)}, // rib crest at rib_crest/2
+	}
+	if err := applyEdgeOffsets(dim, o, offsets); err != nil {
+		return err
+	}
+	if _, err := dim.Distance(p[0], p[1], radialWidth(d.raceSmall, d.bore)); err != nil {
+		return fmt.Errorf("dimension ribbed cone raceway small end: %w", err)
+	}
+	if _, err := dim.Distance(p[3], p[2], radialWidth(d.ribCrest, d.raceRib)); err != nil {
+		return fmt.Errorf("dimension ribbed cone raceway at rib foot: %w", err)
+	}
+	return nil
+}
