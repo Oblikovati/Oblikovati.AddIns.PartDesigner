@@ -255,13 +255,19 @@ metric families.
 - The **ball count Z** is a representative value (typical for the size in general-purpose catalogues,
   e.g. SKF), not an ISO 15 dimension — ISO 15 tabulates only the boundary dimensions. It drives the
   circular pattern of the ball complement.
-- **Representational** (per the milestone plan): the pitch-circle diameter, ball diameter and the two
-  race diameters are **derived parameters** computed from bore/outer_dia by fixed fractions of the
-  radial gap (ball ≈ 0.28·(D−d)). Each race is set to **clear the ball crest**: a ball centred on the
-  pitch circle reaches pitch_dia ± ball_dia, and the race is pushed one clearance (≈ 0.012·(D−d))
-  beyond that crest, so the ring solids never overlap the balls (a race merely inset from the pitch
-  circle would swallow them). The whole bearing re-drives with the size. Race grooves, cage and seals
-  are a tracked refinement; the balls sit as solids on the pitch circle between two solid annular rings.
+- **Representational** (per the milestone plan): the pitch-circle diameter, ball diameter, groove
+  radius and the two raceway shoulder diameters are **derived parameters** computed from
+  bore/outer_dia by fixed fractions of the radial gap (ball ≈ 0.28·(D−d)). The whole bearing re-drives
+  with the size.
+- **Ground race grooves modelled** (#53): each ring's raceway carries a concave groove arc that seats
+  the ball. The groove radius is a **conformity** multiple of the ball diameter (r_g = 0.52·ball_dia,
+  in the standard 0.515–0.53 design band), centred on the pitch circle so it sits just outside the
+  ball surface — the ball nests in the groove with a uniform clearance and the rings/balls stay
+  independent bodies (no boolean). The raceway shoulders flank the groove at pitch_dia ± 1.1·r_g
+  (shoulder factor k = 0.55), leaving a positive shoulder land across the whole size range (asserted
+  in a unit test). ISO 15 does not tabulate groove geometry (it is proprietary/design-level), so the
+  conformity-derived groove is the honest representational choice. Cage and seals/shields remain a
+  tracked refinement.
 
 ### `roller_bearing_iso15.json` — ISO 15 (cylindrical roller bearings, NU 2-series)
 - Bore d, outer diameter D and width B are the boundary dimensions tabulated in ISO 15 for the
