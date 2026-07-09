@@ -23,20 +23,29 @@ func pinMember(diameter, length float64) ResolvedMember {
 	return ResolvedMember{Family: fam, Member: fam.Members[0]}
 }
 
-// TestPinBuildsCylinder is the D2 acceptance check: the diameter is published and extruded to
-// `length` as one new cylinder.
-func TestPinBuildsCylinder(t *testing.T) {
+// TestPinBuildsChamferedCylinder is the acceptance check: the diameter/length are published, the
+// end chamfer is derived, and a chamfered rod half-section is revolved about the Z axis as one new
+// solid (the two end chamfers give the dowel its lead-in).
+func TestPinBuildsChamferedCylinder(t *testing.T) {
 	h := &fakeHost{dof: 0}
 	if err := (Pin{}).Build(newBuilder(h, catalog.UnitsMillimetre), pinMember(8, 40)); err != nil {
 		t.Fatalf("Build error = %v", err)
 	}
 	assertParam(t, h.added, "diameter", "8 mm")
 	assertParam(t, h.added, "length", "40 mm")
-	if len(h.extrudes) != 1 || h.extrudes[0].Distance != "length" || h.extrudes[0].Operation != "new" {
-		t.Errorf("extrudes = %+v, want one length/new cylinder", h.extrudes)
+	assertParam(t, h.added, "end_chamfer", "diameter * 0.1")
+	if len(h.extrudes) != 0 {
+		t.Errorf("extrudes = %+v, want none (the pin is revolved)", h.extrudes)
 	}
-	if h.circleRadius != "(diameter)/2" {
-		t.Errorf("circle radius = %q, want the diameter half", h.circleRadius)
+	if len(h.revolves) != 1 || h.revolves[0].AxisRef != "origin/axis/z" ||
+		h.revolves[0].Angle != "360 deg" || h.revolves[0].Operation != "new" {
+		t.Errorf("revolves = %+v, want one z / 360 deg / new", h.revolves)
+	}
+	// The chamfer feet and hypotenuses are parameter expressions, not literal coordinates.
+	for _, expr := range []string{"length", "(diameter) / 2 - (end_chamfer)", "(end_chamfer) * sqrt(2)"} {
+		if !hasDimension(h.dimensions, expr) {
+			t.Errorf("rod dimension %q not applied; have %+v", expr, h.dimensions)
+		}
 	}
 }
 
