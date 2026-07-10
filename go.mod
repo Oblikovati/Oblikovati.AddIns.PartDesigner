@@ -17,4 +17,4 @@ module oblikovati.org/part-designer
 
 go 1.24.0
 
-require oblikovati.org/api v0.130.0
+require oblikovati.org/api v0.132.0
