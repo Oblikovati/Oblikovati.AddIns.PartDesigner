@@ -4,7 +4,6 @@ package designer
 
 import (
 	"fmt"
-	"strconv"
 	"strings"
 
 	"oblikovati.org/api/types"
@@ -184,15 +183,13 @@ func partName(fam *catalog.Family, m catalog.Member) string {
 	return fam.Standard
 }
 
-// sizeLabel joins the member's key-column values compactly (e.g. "8x40" for keys d,l).
+// sizeLabel joins the member's key-column values compactly (e.g. "8x40" for keys d,l), reusing
+// the shared per-column formatter (memberCellValue) so the members table and this label format
+// numbers identically.
 func sizeLabel(fam *catalog.Family, m catalog.Member) string {
 	parts := make([]string, 0, len(fam.KeyColumns))
 	for _, col := range fam.KeyColumns {
-		if v, ok := m.Values[col]; ok {
-			parts = append(parts, strconv.FormatFloat(v, 'g', -1, 64))
-			continue
-		}
-		if s, ok := m.Labels[col]; ok {
+		if s, ok := memberCellValue(m, col); ok {
 			parts = append(parts, s)
 		}
 	}

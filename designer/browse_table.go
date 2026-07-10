@@ -39,11 +39,21 @@ func tableRows(fam *catalog.Family) []wire.TableRow {
 func memberCells(fam *catalog.Family, m catalog.Member) []string {
 	cells := make([]string, len(fam.Columns))
 	for i, col := range fam.Columns {
-		if v, ok := m.Values[col.Name]; ok {
-			cells[i] = strconv.FormatFloat(v, 'g', -1, 64)
-			continue
-		}
-		cells[i] = m.Labels[col.Name]
+		cells[i], _ = memberCellValue(m, col.Name)
 	}
 	return cells
+}
+
+// memberCellValue formats one member's value for a column (by name): a numeric value compactly,
+// else its text label, reporting whether the column is present on the member at all. It is the
+// single source of member-cell formatting, shared by the members table (memberCells) and the
+// compact size label (sizeLabel in placement.go).
+func memberCellValue(m catalog.Member, colName string) (string, bool) {
+	if v, ok := m.Values[colName]; ok {
+		return strconv.FormatFloat(v, 'g', -1, 64), true
+	}
+	if s, ok := m.Labels[colName]; ok {
+		return s, true
+	}
+	return "", false
 }
