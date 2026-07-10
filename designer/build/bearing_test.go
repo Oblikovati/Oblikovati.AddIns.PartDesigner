@@ -221,6 +221,26 @@ func TestShieldsFit(t *testing.T) {
 	}
 }
 
+// TestBallShieldFallbackSkipsShields is the Build-level regression for shieldsFit's false branch:
+// TestShieldsFit only checks the predicate. With a fat-ball/thin-ring member (no axial room),
+// revolveShields must return nil before building either face, leaving only the ball + two grooved
+// rings revolved (3 revolves) — no shield revolve at all. It would fail if shieldsFit were removed
+// or inverted, since two more shield revolves (5 total, per TestBallShieldsRevolvedBothFaces) would
+// then appear.
+func TestBallShieldFallbackSkipsShields(t *testing.T) {
+	h := &fakeHost{dof: 0}
+	m := bearingMember("x", 10, 40, 2, 8) // fat ball, thin ring: no axial room for shields
+	if shieldsFit(m) {
+		t.Fatal("test fixture unexpectedly passes shieldsFit; no longer degenerate")
+	}
+	if err := (BallBearing{}).Build(newBuilder(h, catalog.UnitsMillimetre), m); err != nil {
+		t.Fatalf("Build error = %v", err)
+	}
+	if len(h.revolves) != 3 {
+		t.Fatalf("revolves = %d, want 3 (ball + inner ring + outer ring, no shields)", len(h.revolves))
+	}
+}
+
 // TestDefaultRegistryHasBallBearing checks the generator is wired into the built-in set.
 func TestDefaultRegistryHasBallBearing(t *testing.T) {
 	g, ok := DefaultRegistry().Get("ball_bearing")

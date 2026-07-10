@@ -155,3 +155,68 @@ func TestRollerChamferFits(t *testing.T) {
 		t.Error("rollerChamferFits true for a sub-floor chamfer; want plain-roller fallback")
 	}
 }
+
+// TestRollerChamferFallbackExtrudesPlainRoller is the Build-level regression for rollerChamferFits'
+// false branch: TestRollerChamferFits only checks the predicate, not that Build actually takes the
+// fallback. With a sub-floor chamfer leg, buildRoller must call buildPlainRoller — an EXTRUDE of a
+// plain cylinder — instead of RevolveAboutCenterline-ing a chamfered meridian. This member's
+// flangesFit and rollerCageBarsFit are both still true (verified by hand), so it isolates the
+// chamfer fallback: it would fail if rollerChamferFits were removed or inverted, since the roller
+// would then be revolved (not extruded) and a centerline revolve would appear.
+func TestRollerChamferFallbackExtrudesPlainRoller(t *testing.T) {
+	h := &fakeHost{dof: 0}
+	rm := rollerMember("x", 30, 34, 16, 13) // D-d=4mm -> roller_dia 1.12mm -> leg 0.112mm < 0.15mm floor
+	if rollerChamferFits(rm) {
+		t.Fatal("test fixture unexpectedly passes rollerChamferFits; no longer degenerate")
+	}
+	if err := (RollerBearing{}).Build(newBuilder(h, catalog.UnitsMillimetre), rm); err != nil {
+		t.Fatalf("Build error = %v", err)
+	}
+	if len(h.extrudes) != 1 {
+		t.Fatalf("extrudes = %d, want 1 (the plain roller)", len(h.extrudes))
+	}
+	if h.extrudes[0].Distance != "roller_length" || h.extrudes[0].Direction != "symmetric" {
+		t.Errorf("plain roller extrude = %+v, want distance roller_length / direction symmetric", h.extrudes[0])
+	}
+	for _, rv := range h.revolves {
+		if rv.AboutCenterline {
+			t.Errorf("found centerline revolve %+v; want no chamfered-roller revolve in the fallback path", rv)
+		}
+	}
+}
+
+// TestFlangeFallbackUsesPlainOuterRing is the Build-level regression for flangesFit's false branch:
+// TestFlangesFitAcrossFamily only checks the predicate. With no axial overhang band,
+// revolveFlangedOuterRing must fall back to the plain revolveRing (GroundedRingSection, a
+// "rectangle" sketch entity) instead of the flanged ⊐ channel (GroundedFlangedRingSection, a
+// "polyline" via closedPolyline). revolveFlangedOuterRing is unconditionally the LAST section Build
+// adds (nothing runs after it), and every section's constrain step ends by grounding a "point"
+// origin (groundedOrigin), so the last non-point recorded kind pins down which outline ran;
+// counting polylines confirms the only one came from the (unrelated, still-fitting) chamfered
+// roller, not a second one from a wrongly-taken flanged path.
+func TestFlangeFallbackUsesPlainOuterRing(t *testing.T) {
+	h := &fakeHost{dof: 0}
+	rm := rollerMember("x", 30, 62, 1.0, 13) // width=1.0mm leaves no axial overhang band
+	if flangesFit(rm) {
+		t.Fatal("test fixture unexpectedly passes flangesFit; no longer degenerate")
+	}
+	if err := (RollerBearing{}).Build(newBuilder(h, catalog.UnitsMillimetre), rm); err != nil {
+		t.Fatalf("Build error = %v", err)
+	}
+	var last string
+	var polylines int
+	for _, k := range h.entityKinds {
+		if k != "point" {
+			last = k
+		}
+		if k == "polyline" {
+			polylines++
+		}
+	}
+	if last != "rectangle" {
+		t.Errorf("outer-ring entity kind = %q, want rectangle (plain fallback, not the flanged polyline)", last)
+	}
+	if polylines != 1 {
+		t.Errorf("polyline entities = %d, want 1 (only the chamfered-roller section)", polylines)
+	}
+}

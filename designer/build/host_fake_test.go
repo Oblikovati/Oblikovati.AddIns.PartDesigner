@@ -29,6 +29,7 @@ type fakeHost struct {
 	added          []wire.ParameterSetArgs
 	set            []wire.ParameterSetArgs
 	circleRadius   string
+	entityKinds    []string      // wire.AddSketchEntityArgs.Kind of every sketch.addEntity call, in order
 	rectangleSeeds [][][]float64 // seed [corner,opposite] points of every rectangle entity added, in order
 	constraints    []string      // geometric constraint kinds, in order
 	dimensions     []wire.AddDimensionArgs
@@ -94,6 +95,7 @@ func (h *fakeHost) listReply() ([]byte, error) {
 // recorded circleRadius is left untouched by a polygon add.
 func (h *fakeHost) addEntityReply(req []byte) ([]byte, error) {
 	a := decode[wire.AddSketchEntityArgs](req)
+	h.entityKinds = append(h.entityKinds, a.Kind)
 	if a.Radius != "" {
 		h.circleRadius = a.Radius
 	}

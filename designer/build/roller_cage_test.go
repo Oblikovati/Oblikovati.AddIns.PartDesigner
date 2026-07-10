@@ -54,3 +54,29 @@ func TestCageBarsFitFamily(t *testing.T) {
 		t.Error("rollerCageBarsFit true for a dense complement; want no-bars fallback")
 	}
 }
+
+// TestRollerCageFallbackSkipsBar is the Build-level regression for rollerCageBarsFit's false
+// branch: TestCageBarsFitFamily only checks the predicate. With a dense roller complement (the
+// free half-gap under the floor), patternRollers must skip buildRollerCageBar entirely — no
+// bar_half_angle revolve appears anywhere — while the pattern still arrays exactly the one roller
+// feature (roller-only, nothing to co-pattern). This member's rollerChamferFits and flangesFit are
+// both still true (verified by hand), so it isolates the cage fallback: it would fail if
+// rollerCageBarsFit were removed or inverted, since a bar_half_angle revolve would then appear.
+func TestRollerCageFallbackSkipsBar(t *testing.T) {
+	h := &fakeHost{dof: 0}
+	rm := rollerMember("x", 30, 62, 16, 40) // dense complement: free half-gap < floor
+	if rollerCageBarsFit(rm) {
+		t.Fatal("test fixture unexpectedly passes rollerCageBarsFit; no longer degenerate")
+	}
+	if err := (RollerBearing{}).Build(newBuilder(h, catalog.UnitsMillimetre), rm); err != nil {
+		t.Fatalf("Build error = %v", err)
+	}
+	if len(h.patterns) != 1 {
+		t.Fatalf("patterns = %d, want 1 (roller-only, no bar to co-pattern)", len(h.patterns))
+	}
+	for _, rv := range h.revolves {
+		if rv.Angle == "bar_half_angle" {
+			t.Errorf("found bar_half_angle revolve %+v; want no cage bar in the fallback path", rv)
+		}
+	}
+}
