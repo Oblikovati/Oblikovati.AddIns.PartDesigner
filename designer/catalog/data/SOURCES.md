@@ -320,8 +320,27 @@ metric families.
 - Bore d, outer diameter D and total height H are the ISO 104 boundary dimensions for the 511xx
   single-direction thrust ball bearing series (e.g. 51105 → 25 × 42 × 11). These three per member are
   exact; the **ball count Z** is a representative value (ISO 104 tabulates only boundary dimensions).
-- **Representational**: a shaft washer and a housing washer (flat annular races) with a ball
-  complement between them on the pitch circle, the stack centred on the mid-plane. The ball diameter
-  (≈ 0.4·H) and washer thickness (≈ 0.28·H each) are derived so the two washers plus the ball leave a
-  small axial clearance — the balls sit clear of both washer faces rather than tangent to them.
-  Grooved raceways and the self-aligning seat are a tracked refinement.
+- **Representational**: a shaft washer and a housing washer with a ground groove on each ball-facing
+  face (an outer land, a groove arc cradling the ball, an inner land) and a ball complement between
+  them on the pitch circle, the stack centred on the mid-plane. The ball diameter (≈ 0.45·H), groove
+  radius (≈ 0.53·ball) and land offset (≈ 0.7·groove) are derived so each ball nests in the groove
+  with a small clearance rather than sitting tangent to a flat face.
+
+### `thrust_self_aligning_iso104.json` — ISO 104 (self-aligning thrust ball bearings, 532xx)
+- Bore d, outer diameter D and total height H are the ISO 104 boundary dimensions for the 532xx
+  self-aligning thrust ball bearing series (532xx shares the 511xx boundary plan; e.g. 53206 →
+  30 × 47 × 11). These three per member are exact; the **ball count Z** is a representative value
+  (ISO 104 tabulates only boundary dimensions).
+- **Representational**: the same grooved shaft washer and ball complement as the 511xx, but the
+  housing washer's outboard **back is a shallow concave seat** and a separate **seat washer** (concave
+  underside, flat top, larger OD) nests over it with a hair clearance, so the bearing can tilt to take
+  up shaft misalignment. The boundary dimensions are exact ISO 104; **the sphered seat is a
+  design-level derivation** — the seat sphere radius follows the classical relation R = (a² + s²)/2s
+  from a cap-depth fraction s = 0.06·D over the OD radius a = D/2 (geometry-math-advisor #54), flat
+  enough (large R) to fit the washer thickness rather than the catalog SR, its axis centre placed so
+  the OD-back rim keeps the nominal +H/2 back level. Because that flatness puts the seat arc's sagitta
+  below the tessellation floor (< 0.1 mm over the washer width), where a sketch arc is numerically
+  degenerate, each concave back is built as the sphere's straight **chord** — a shallow cone < 0.1 mm
+  off the true sphere, pinned by its rim stations (the advisor's sub-floor-sagitta fallback). The seat
+  washer's underside is the chord of a slightly smaller sphere about the same centre (clearance
+  ≈ 0.02·H), so the two seat faces do not z-fight.
