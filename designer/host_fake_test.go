@@ -186,6 +186,23 @@ func (h *fakeHost) called(method string) bool {
 	return false
 }
 
+// paramWasSet reports, under the host lock, whether a parameter was Set to expr — the locked
+// observer for effects the engine produces on a background goroutine (parametersSet from an
+// async ChangeSize/Place), mirroring called()'s h.mu-guarded convention.
+func (h *fakeHost) paramWasSet(name, expr string) bool {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	return hasParam(h.set, name, expr)
+}
+
+// docCount returns the number of modelled documents under the host lock, so a test can observe
+// the document table without racing a background goroutine that may create one.
+func (h *fakeHost) docCount() int {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	return len(h.docs)
+}
+
 // waitFor polls cond until it holds or a short deadline elapses, for effects the engine
 // produces from a goroutine.
 func waitFor(t *testing.T, cond func() bool, msg string) {

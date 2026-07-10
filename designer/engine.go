@@ -118,9 +118,10 @@ func (e *Engine) handleCommand(ev []byte) {
 	}
 }
 
-// handlePanelEdit applies one dropdown edit to the cascading selection and re-shows the panel
-// with the updated downstream choices. The selection mutation is cheap (no host call) and
-// safe on the session goroutine; the re-show makes host calls, so it runs on its own.
+// handlePanelEdit applies one control edit (filter, tree, or table selection) to the browse
+// selection and re-shows the panel with the updated downstream choices. The selection mutation
+// is cheap (no host call) and safe on the session goroutine; the re-show makes host calls, so it
+// runs on its own.
 func (e *Engine) handlePanelEdit(ev []byte) {
 	var p struct {
 		WindowID  string `json:"windowId"`
@@ -132,11 +133,11 @@ func (e *Engine) handlePanelEdit(ev []byte) {
 	}
 	e.mu.Lock()
 	e.applySelection(p.ControlID, p.Value)
-	resize := e.bound && p.ControlID == sizeControlID
+	resize := e.bound && p.ControlID == membersControlID
 	memberKey := e.sel.memberKey
 	e.mu.Unlock()
-	// When the panel is bound to a stamped part, changing its Size re-drives that document in
-	// place (Change-Size) rather than only updating the browse selection.
+	// When the panel is bound to a stamped part, choosing a different member row re-drives that
+	// document in place (Change-Size) rather than only updating the browse selection.
 	go func() {
 		if resize {
 			_ = e.ChangeSize(memberKey)

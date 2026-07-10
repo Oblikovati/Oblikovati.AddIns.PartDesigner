@@ -59,3 +59,26 @@ func ids(fs []*Family) []string {
 	}
 	return out
 }
+
+// TestTreeOfSubsetOmitsOthers checks that TreeOf builds a tree from only the families it is
+// given (not the whole catalogue), so a filtered browse view never leaks unrelated families.
+func TestTreeOfSubsetOmitsOthers(t *testing.T) {
+	c, err := Load()
+	if err != nil {
+		t.Fatalf("Load() error = %v", err)
+	}
+	all := c.Families()
+	one := TreeOf(all[:1])
+	if countFamilies(one) != 1 {
+		t.Fatalf("TreeOf(1 family) has %d families, want 1", countFamilies(one))
+	}
+}
+
+// countFamilies sums the families in a tree, depth-first.
+func countFamilies(n *CategoryNode) int {
+	total := len(n.Families)
+	for _, ch := range n.Children {
+		total += countFamilies(ch)
+	}
+	return total
+}
