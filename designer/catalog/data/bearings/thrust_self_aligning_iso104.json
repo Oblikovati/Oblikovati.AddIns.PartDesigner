@@ -1,0 +1,21 @@
+{
+  "id": "iso104-self-aligning-thrust-ball-bearing",
+  "category": "Bearings/Thrust Bearings/Self-Aligning",
+  "standard": "ISO 104",
+  "generator": "thrust_self_aligning",
+  "units": "mm",
+  "keyColumns": ["designation"],
+  "columns": [
+    {"name": "designation", "param": "designation", "type": "text"},
+    {"name": "d", "param": "bore", "type": "length"},
+    {"name": "D", "param": "outer_dia", "type": "length"},
+    {"name": "H", "param": "height", "type": "length"},
+    {"name": "Z", "param": "ball_count", "type": "count"}
+  ],
+  "members": [
+    {"designation": "53204", "d": 20, "D": 35, "H": 10, "Z": 14},
+    {"designation": "53205", "d": 25, "D": 42, "H": 11, "Z": 15},
+    {"designation": "53206", "d": 30, "D": 47, "H": 11, "Z": 16},
+    {"designation": "53208", "d": 40, "D": 60, "H": 13, "Z": 17}
+  ]
+}
