@@ -181,6 +181,35 @@ func TestBallShieldsRevolvedBothFaces(t *testing.T) {
 	}
 }
 
+// TestBallShieldsMirrorZSign is the regression guard for the −Z shield's mirroring: revolveOneShield
+// steers GroundedShieldSection's rectangle seed onto the +Z or −Z face purely via the negZ sign flip
+// (section_shield.go), and nothing else in the build distinguishes the two shields — same dimension
+// expressions, same revolve axis/angle/op. A defect that dropped the sign (e.g. negZ ignored, or
+// `sign := 1.0` unconditional) would still pass every other shield test, so this asserts the actual
+// mechanism directly: the two shield rectangles' seed corners sit on opposite sides of Z=0.
+func TestBallShieldsMirrorZSign(t *testing.T) {
+	h := &fakeHost{dof: 0}
+	if err := (BallBearing{}).Build(newBuilder(h, catalog.UnitsMillimetre), bearingMember("6206", 30, 62, 16, 9)); err != nil {
+		t.Fatalf("Build error = %v", err)
+	}
+	if len(h.rectangleSeeds) != 2 {
+		t.Fatalf("rectangleSeeds = %d, want 2 (one rectangle per shield)", len(h.rectangleSeeds))
+	}
+	faceZ := make([]float64, len(h.rectangleSeeds))
+	for i, seed := range h.rectangleSeeds {
+		if len(seed) != 2 || len(seed[0]) != 2 || len(seed[1]) != 2 {
+			t.Fatalf("shield[%d] seed = %v, want two [x,y] corners", i, seed)
+		}
+		faceZ[i] = seed[0][1] // corner's Z (sketch-plane Y on XZ); opposite corner shares its sign
+	}
+	if faceZ[0] == 0 || faceZ[1] == 0 {
+		t.Fatalf("shield seed Z = %v, want both nonzero", faceZ)
+	}
+	if (faceZ[0] > 0) == (faceZ[1] > 0) {
+		t.Errorf("shield seed Z signs = %v, want opposite signs (one +Z face, one −Z face)", faceZ)
+	}
+}
+
 // TestShieldsFit checks the axial-slack guard: every 60/62/63-series member (worst case 6200, slack
 // 1.70mm) gets shields, but a synthetic fat-ball/thin-ring member (no room) falls back to none.
 func TestShieldsFit(t *testing.T) {

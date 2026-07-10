@@ -25,23 +25,24 @@ type fakeHost struct {
 	headCylinder bool     // when true, referenceKeys adds a second (head) cylinder above the shank
 	shortPolygon bool     // when true, a polygon add returns too few points (missing centre)
 
-	methods      []string
-	added        []wire.ParameterSetArgs
-	set          []wire.ParameterSetArgs
-	circleRadius string
-	constraints  []string // geometric constraint kinds, in order
-	dimensions   []wire.AddDimensionArgs
-	extrude      featureargs.Extrude               // the last extrude (back-compat with the round-bar test)
-	extrudeKind  string                            // the last feature kind
-	extrudes     []featureargs.Extrude             // every extrude, in order
-	threads      []featureargs.Thread              // every cosmetic/cut thread, in order
-	lofts        []featureargs.Loft                // every loft, in order
-	coils        []featureargs.Coil                // every coil, in order
-	revolves     []featureargs.Revolve             // every revolve, in order
-	sweeps       []featureargs.Sweep               // every sweep, in order
-	patterns     []wire.CircularPatternFeatureArgs // every circular pattern, in order
-	workPlanes   []wire.CreateWorkPlaneArgs        // every work plane created, in order
-	featureCount int                               // running count, to name each added feature
+	methods        []string
+	added          []wire.ParameterSetArgs
+	set            []wire.ParameterSetArgs
+	circleRadius   string
+	rectangleSeeds [][][]float64 // seed [corner,opposite] points of every rectangle entity added, in order
+	constraints    []string      // geometric constraint kinds, in order
+	dimensions     []wire.AddDimensionArgs
+	extrude        featureargs.Extrude               // the last extrude (back-compat with the round-bar test)
+	extrudeKind    string                            // the last feature kind
+	extrudes       []featureargs.Extrude             // every extrude, in order
+	threads        []featureargs.Thread              // every cosmetic/cut thread, in order
+	lofts          []featureargs.Loft                // every loft, in order
+	coils          []featureargs.Coil                // every coil, in order
+	revolves       []featureargs.Revolve             // every revolve, in order
+	sweeps         []featureargs.Sweep               // every sweep, in order
+	patterns       []wire.CircularPatternFeatureArgs // every circular pattern, in order
+	workPlanes     []wire.CreateWorkPlaneArgs        // every work plane created, in order
+	featureCount   int                               // running count, to name each added feature
 }
 
 // Call records the method and returns a minimal reply per the wire method.
@@ -108,6 +109,7 @@ func (h *fakeHost) addEntityReply(req []byte) ([]byte, error) {
 		})
 	}
 	if a.Kind == "rectangle" {
+		h.rectangleSeeds = append(h.rectangleSeeds, a.Points)
 		return json.Marshal(wire.AddSketchEntityResult{
 			EntityID: 40, Kind: "rectangle",
 			EntityIDs: []uint64{40, 41, 42, 43}, // 4 edges
