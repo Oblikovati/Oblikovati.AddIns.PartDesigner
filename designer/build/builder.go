@@ -216,6 +216,22 @@ func (b *PartBuilder) Revolve(sk *SketchContext, axisRef, angleExpr, operation s
 	return featureName(res), nil
 }
 
+// RevolveAboutCenterline revolves a profile 360° about the sketch's own centerline — Inventor's
+// "revolve about the sketch centerline". It is how a part whose axis of revolution is INTERNAL and
+// TILTED (not a world axis) is turned: e.g. a tapered roller, whose cone axis passes through the
+// bearing's shared apex at the contact angle. The sketch must carry exactly one centerline (see
+// SketchContext.AddCenterline). Returns the created feature's name so it can be patterned.
+func (b *PartBuilder) RevolveAboutCenterline(sk *SketchContext, angleExpr, operation string) (string, error) {
+	res, err := client.AddFeature(b.api.Features(), featureargs.Revolve{
+		SketchIndex: sk.index, ProfileIndex: 0, AboutCenterline: true,
+		Angle: angleExpr, Operation: operation,
+	})
+	if err != nil {
+		return "", fmt.Errorf("revolve sketch %d about its centerline by %q (%s): %w", sk.index, angleExpr, operation, err)
+	}
+	return featureName(res), nil
+}
+
 // PatternCircular replicates the named source feature countExpr times evenly around the world Z
 // axis — how a bearing's single ball is arrayed into its full ball complement.
 func (b *PartBuilder) PatternCircular(sourceFeature, countExpr string) error {

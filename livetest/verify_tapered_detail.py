@@ -2,9 +2,11 @@
 """Place an ISO 355 30206 tapered-roller bearing and confirm the on-apex detail is real (issue #54):
 the placed assembly's total volume must match the analytic model — a ribbed cone (inner ring with a
 big-end retaining flange), a plain cup (outer ring), and a full complement of tapered rollers whose
-big/small diameters and raceways are the SHARED apex rays — proving the ribbed cone section solved to
-DOF 0 and everything revolved/lofted to correct solids. Then screenshot it (the big-end rib and the
-tilted rollers seated on both raceways must be visible). Usage: verify_tapered_detail.py <outdir>"""
+big end is a SPHERICAL CAP centred on the shared apex (Method C: each roller is one body of
+revolution about its own tilted axis, the sketch centerline). The volume match proves the ribbed
+cone section and the domed-roller section both solved to DOF 0 and revolved to correct solids. Then
+screenshot it (the big-end rib and the tilted, domed rollers seated on both raceways must be
+visible). Usage: verify_tapered_detail.py <outdir>"""
 import json, math, sys, time
 import mcp
 
@@ -39,8 +41,10 @@ def geom():
     cone_rib = 2 * (apex + rib_z) * math.tan(cone_ray) - cone_clr
     cup_bottom = 2 * (apex - WIDTH / 2.0) * math.tan(ar) + cup_clr
     cup_top = 2 * (apex + WIDTH / 2.0) * math.tan(ar) + cup_clr
-    return dict(ra=ra, r_big=r_big, r_sm=r_sm, rib_z=rib_z, rib_crest=rib_crest,
-                cone_bottom=cone_bottom, cone_rib=cone_rib, cup_bottom=cup_bottom, cup_top=cup_top)
+    sphere_r = math.hypot(zb, r_big / 2.0)  # Method-C dome radius: apex O → big-end rim
+    return dict(ra=ra, r_big=r_big, r_sm=r_sm, zb=zb, sphere_r=sphere_r, rib_z=rib_z,
+                rib_crest=rib_crest, cone_bottom=cone_bottom, cone_rib=cone_rib,
+                cup_bottom=cup_bottom, cup_top=cup_top)
 
 
 def revolve_volume(x_out, x_in, z0, z1, n=6000):
@@ -68,8 +72,10 @@ def analytic_volume():
     cup = revolve_volume(lambda z: orad,
                          lambda z: lerp(z, -w2, g["cup_bottom"] / 2, w2, g["cup_top"] / 2), -w2, w2)
     rb, rs = g["r_big"] / 2, g["r_sm"] / 2                       # roller radii
-    roller = (math.pi * g["ra"] / 3.0) * (rb * rb + rb * rs + rs * rs)  # frustum volume
-    return cone + cup + ROLLERS * roller
+    frustum = (math.pi * g["ra"] / 3.0) * (rb * rb + rb * rs + rs * rs)  # cone frustum (apex O)
+    cap_h = g["sphere_r"] - g["zb"]                              # domed big-end spherical cap
+    cap = (math.pi * cap_h * cap_h / 3.0) * (3 * g["sphere_r"] - cap_h)
+    return cone + cup + ROLLERS * (frustum + cap)
 
 
 def place():
