@@ -2,6 +2,11 @@
 
 package build
 
+import (
+	"fmt"
+	"math"
+)
+
 // Tapered-roller proportions. A tapered-roller bearing (ISO 355) is a cone (inner ring) and a cup
 // (outer ring) whose raceways are truncated cones, with tapered rollers between them. Its DEFINING
 // property is that the cup-raceway cone, cone-raceway cone and every roller cone share ONE common
@@ -34,6 +39,10 @@ const (
 	taperRibFootGap = "0.04" // rib-foot axial gap beyond the roller big end, as a fraction of width
 	taperRibProud   = "0.8"  // rib crest above the roller centre, as a fraction of roller_big_dia
 	taperRibCupGap  = "0.3"  // rib-crest-to-cup radial gap, as a fraction of roller_big_dia
+	// taperDomeSagittaFloor is the big-end dome sagitta below which (as a fraction of the roller
+	// big diameter) the dome is closed FLAT instead of as an arc — a near-chord arc is numerically
+	// fragile once its bulge drops under the tessellation tolerance (geometry-math-advisor #54).
+	taperDomeSagittaFloor = 1e-3
 )
 
 // TaperedRoller generates a tapered-roller bearing (ISO 355, 302xx/303xx/313xx series)
@@ -57,7 +66,7 @@ func (TaperedRoller) Build(b *PartBuilder, rm ResolvedMember) error {
 	if err := deriveTaperParams(b); err != nil {
 		return err
 	}
-	if err := b.patternTaperedRollers(); err != nil {
+	if err := b.patternTaperedRollers(rm); err != nil {
 		return err
 	}
 	if err := b.revolveCone(); err != nil {
@@ -93,8 +102,11 @@ func taperDerivations() []struct{ name, expr string } {
 		// On-apex cone angles: cup ray = α; roller half-angle β = α/8; cone ray = α−2β; axis δ = α−β.
 		{"cone_ray_angle", "contact_angle * " + taperConeRayFraction},
 		{"axis_angle", "contact_angle * " + taperAxisFraction},
-		// Common apex: the pitch cone meets the axis this far on the small-end side (apex never drawn).
+		// Common apex: the pitch cone meets the axis this far (AXIAL, along Z) on the small-end side
+		// (apex never drawn). axis_apex is the same distance measured ALONG the tilted roller axis
+		// (O→pitch-point) — apex_arm/cos δ — used to triangulate the roller rim points off the apex.
 		{"apex_arm", "(pitch_dia / 2) / tan(axis_angle)"},
+		{"axis_apex", "apex_arm / cos(axis_angle)"},
 		// Roller-end stations from the apex (big end farther out at +Z, small end nearer the apex).
 		{"zeta_big", "apex_arm + roller_axial / 2"},
 		{"zeta_small", "apex_arm - roller_axial / 2"},
@@ -108,8 +120,11 @@ func taperDerivations() []struct{ name, expr string } {
 		{"roller_small_pos", "(cone_small_dia + cup_small_dia) / 2"},
 		{"roller_big_dia", "(cup_big_dia - cone_big_dia) / 2"},
 		{"roller_small_dia", "(cup_small_dia - cone_small_dia) / 2"},
-		// Method-C large-end sphere radius (centred at the apex) — published for a future domed roller.
-		{"roller_sphere_r", "zeta_big / cos(contact_angle)"},
+		// Method-C large-end sphere radius: the distance from the apex O to the big-end rim, so the
+		// dome (an arc centred at O) passes exactly through the rim. = sqrt(zeta_big² + r_big²) =
+		// zeta_big/cos β_true. NOT zeta_big/cos α — that uses the contact angle instead of the roller
+		// half-angle, overshoots ~3.6% and misses the rim (geometry-math-advisor #54).
+		{"roller_sphere_r", "sqrt(zeta_big * zeta_big + (roller_big_dia / 2) * (roller_big_dia / 2))"},
 		// Asymmetric tessellation clearances so each raceway sits just off the rollers (see constants).
 		{"cone_clr", "roller_big_dia * " + taperConeClearance},
 		{"cup_clr", "roller_big_dia * " + taperCupClearance},
@@ -127,36 +142,82 @@ func taperDerivations() []struct{ name, expr string } {
 	}
 }
 
-// patternTaperedRollers lofts one tapered roller — a frustum from the big-end circle (on the +Z
-// offset plane, centred at the big-end radius) to the small-end circle (on the −Z plane, centred at
-// the smaller radius), so it tilts in the radial-axial plane — then circular-patterns it
-// roller_count times about the Z axis into the roller complement.
-func (b *PartBuilder) patternTaperedRollers() error {
-	big, err := b.OffsetPlaneSketch("roller_axial / 2")
+// patternTaperedRollers builds one tapered roller as a single body of revolution about its OWN
+// tilted axis (Method C) — a flat small end, a cone generator through the shared apex O, and a
+// spherical-cap big end (an arc centred at O of radius roller_sphere_r) — then circular-patterns it
+// roller_count times about the Z axis into the roller complement. Revolving about the roller's own
+// axis (the sketch centerline) makes the end faces perpendicular to that axis and folds the dome in
+// as one feature — geometrically faithful where the earlier world-Z loft could not be (its end
+// circles lay on global-Z planes, not perpendicular to the tilted roller). See #54.
+func (b *PartBuilder) patternTaperedRollers(rm ResolvedMember) error {
+	spec, err := taperCRollerSpec(rm)
 	if err != nil {
 		return err
 	}
-	if err := big.GroundedOffsetCircle("roller_big_pos", "roller_big_dia"); err != nil {
-		return err
-	}
-	if err := big.AssertFullyConstrained(); err != nil {
-		return err
-	}
-	small, err := b.OffsetPlaneSketch("-roller_axial / 2")
+	sk, err := b.Sketch("XZ")
 	if err != nil {
 		return err
 	}
-	if err := small.GroundedOffsetCircle("roller_small_pos", "roller_small_dia"); err != nil {
+	if err := sk.GroundedDomedRollerSection(spec); err != nil {
 		return err
 	}
-	if err := small.AssertFullyConstrained(); err != nil {
+	if err := sk.AssertFullyConstrained(); err != nil {
 		return err
 	}
-	roller, err := b.LoftNamed(big, small, "new")
+	roller, err := b.RevolveAboutCenterline(sk, "360 deg", "new")
 	if err != nil {
 		return err
 	}
 	return b.PatternCircular(roller, "roller_count")
+}
+
+// taperCRollerSpec derives one roller's Method-C meridian from the member's boundary dimensions and
+// contact angle: the on-apex geometry (matching the published parameters), the parametric distance
+// expressions the section pins against, and approximate cm seed coordinates that pick the solver
+// branch. It also decides the two degeneracy guards (geometry-math-advisor #54): a pointy small end
+// (apex_arm ≤ roller_axial/2 ⇒ the small end collapses) is an error; a dome whose sagitta falls
+// below the tessellation floor closes flat instead of as a near-chord arc.
+func taperCRollerSpec(rm ResolvedMember) (domedRollerSpec, error) {
+	bore, outer, width := rm.Value("d"), rm.Value("D"), rm.Value("T")
+	alpha := rm.Value("alpha") * math.Pi / 180
+	pitch := (bore + outer) / 2
+	rollerAxial := 0.65 * width
+	coneRay, delta := 0.75*alpha, 0.875*alpha
+	apexArm := (pitch / 2) / math.Tan(delta)
+	zetaBig, zetaSmall := apexArm+rollerAxial/2, apexArm-rollerAxial/2
+	if zetaSmall <= 0.05*apexArm {
+		return domedRollerSpec{}, fmt.Errorf("tapered roller degenerate: zeta_small=%.3f mm (apex_arm=%.3f, "+
+			"roller_axial=%.3f) — the small end collapses; check width/contact_angle", zetaSmall, apexArm, rollerAxial)
+	}
+	tanBeta := (math.Tan(alpha) - math.Tan(coneRay)) / 2
+	rBig, rSmall := zetaBig*tanBeta, zetaSmall*tanBeta
+	sphereR := math.Hypot(zetaBig, rBig)
+	domed := (sphereR - zetaBig) > taperDomeSagittaFloor*(2*rBig) // sagitta above the tessellation floor
+
+	s, c := math.Sin(delta), math.Cos(delta)
+	mp := func(u, v float64) [2]float64 { return [2]float64{(v*s + u*c) / 10, (-apexArm + v*c - u*s) / 10} }
+	return domedRollerSpec{
+		oSeed: [2]float64{0, -apexArm / 10}, cSeed: [2]float64{pitch / 2 / 10, 0},
+		p1Seed: mp(0, zetaSmall), p2Seed: mp(rSmall, zetaSmall),
+		p3Seed: mp(rBig, zetaBig), p4Seed: mp(0, sphereR), p3axSeed: mp(0, zetaBig),
+		apexArm: "apex_arm", halfPitch: "pitch_dia / 2", oP1: "zeta_small",
+		oP2: rollerRimToApex("roller_small_dia", "zeta_small"),
+		cP2: rollerRimToPitch("roller_small_dia", "zeta_small"),
+		oP3: "roller_sphere_r", cP3: rollerRimToPitch("roller_big_dia", "zeta_big"),
+		zetaBig: "zeta_big", domed: domed,
+	}, nil
+}
+
+// rollerRimToApex is |O−rim| for an off-axis rim point: sqrt((dia/2)² + zeta²), zeta the rim's
+// axial station from the apex. rollerRimToPitch is |C−rim|: the rim's along-axis offset from the
+// pitch point is (axis_apex − zeta), so |C−rim| = sqrt((dia/2)² + (axis_apex − zeta)²).
+func rollerRimToApex(dia, zeta string) string {
+	return "sqrt((" + dia + " / 2) * (" + dia + " / 2) + " + zeta + " * " + zeta + ")"
+}
+
+func rollerRimToPitch(dia, zeta string) string {
+	off := "(axis_apex - " + zeta + ")"
+	return "sqrt((" + dia + " / 2) * (" + dia + " / 2) + " + off + " * " + off + ")"
 }
 
 // revolveCone revolves the inner ring (straight bore, sloped raceway, big-end retaining rib) about

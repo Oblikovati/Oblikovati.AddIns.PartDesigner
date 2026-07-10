@@ -54,20 +54,58 @@ func TestTaperedRollerBuildsRollersAndRaces(t *testing.T) {
 	assertParam(t, h.added, "rib_inner_z", "roller_axial / 2 + width * 0.04")
 	assertParam(t, h.added, "rib_crest_dia",
 		"min(roller_big_pos + 0.8 * roller_big_dia, cup_big_dia - 0.3 * roller_big_dia)")
+	// Method-C dome: the along-axis apex distance and the CORRECTED sphere radius (through the rim,
+	// = zeta_big/cos β, not zeta_big/cos α — the old value overshoots and misses the rim).
+	assertParam(t, h.added, "axis_apex", "apex_arm / cos(axis_angle)")
+	assertParam(t, h.added, "roller_sphere_r",
+		"sqrt(zeta_big * zeta_big + (roller_big_dia / 2) * (roller_big_dia / 2))")
 
-	if len(h.lofts) != 1 {
-		t.Fatalf("lofts = %d, want 1 (the tapered roller)", len(h.lofts))
+	// The roller is now a single revolve about its own tilted centerline (Method C), not a loft.
+	if len(h.lofts) != 0 {
+		t.Fatalf("lofts = %d, want 0 (the roller is a centerline revolve, not a loft)", len(h.lofts))
 	}
 	if len(h.patterns) != 1 || h.patterns[0].CountExpr != "roller_count" {
 		t.Errorf("patterns = %+v, want one roller_count pattern", h.patterns)
 	}
-	if len(h.revolves) != 2 {
-		t.Fatalf("revolves = %d, want 2 (cone + cup)", len(h.revolves))
+	// Three revolves in order: the domed roller (about its centerline), then the cone and cup rings.
+	if len(h.revolves) != 3 {
+		t.Fatalf("revolves = %d, want 3 (roller + cone + cup)", len(h.revolves))
 	}
-	for i, rv := range h.revolves {
+	if !h.revolves[0].AboutCenterline || h.revolves[0].Operation != "new" {
+		t.Errorf("roller revolve = %+v, want aboutCenterline / new", h.revolves[0])
+	}
+	if h.revolves[0].AxisRef != "" {
+		t.Errorf("roller revolve AxisRef = %q, want empty (revolves about the sketch centerline)", h.revolves[0].AxisRef)
+	}
+	for i, rv := range h.revolves[1:] {
 		if rv.AxisRef != "origin/axis/z" || rv.Operation != "new" {
-			t.Errorf("revolve[%d] = %+v, want origin/axis/z / new", i, rv)
+			t.Errorf("ring revolve[%d] = %+v, want origin/axis/z / new", i+1, rv)
 		}
+	}
+}
+
+// TestTaperCRollerSpecGuardsDegenerateSmallEnd checks the pointy-small-end guard: when the roller
+// axial span approaches the apex arm (zeta_small → 0) the spec build errors instead of emitting a
+// collapsed roller. A wide, shallow-angle bearing forces the degeneracy.
+func TestTaperCRollerSpecGuardsDegenerateSmallEnd(t *testing.T) {
+	// A steep angle pulls the apex close in (small apex_arm) while a large width makes the roller
+	// axial span exceed it, so zeta_small = apex_arm − roller_axial/2 goes negative — a collapsed
+	// small end. (Unphysical for a real tapered roller, but the guard must catch it.)
+	rm := taperedMember("degen", 20, 40, 60, 45, 10)
+	if _, err := taperCRollerSpec(rm); err == nil {
+		t.Fatal("taperCRollerSpec accepted a degenerate (collapsed small-end) roller; want an error")
+	}
+}
+
+// TestTaperCRollerSpecDomedForCatalogMember checks a normal member yields a domed roller (the dome
+// sagitta clears the tessellation floor for every real ISO 355 contact angle).
+func TestTaperCRollerSpecDomedForCatalogMember(t *testing.T) {
+	spec, err := taperCRollerSpec(taperedMember("30206", 30, 62, 17.25, 14, 16))
+	if err != nil {
+		t.Fatalf("taperCRollerSpec: %v", err)
+	}
+	if !spec.domed {
+		t.Error("30206 roller came out flat; want a domed big end (sagitta above the tessellation floor)")
 	}
 }
 
