@@ -66,13 +66,21 @@ func (TaperedRoller) Build(b *PartBuilder, rm ResolvedMember) error {
 	if err := deriveTaperParams(b); err != nil {
 		return err
 	}
+	if err := deriveCageParams(b); err != nil {
+		return err
+	}
+	// Roller + cage bar are patterned together (the pattern copies both bodies); the cone, cup and
+	// small-end cage rim are revolved AFTER so the pattern does not replicate them.
 	if err := b.patternTaperedRollers(rm); err != nil {
 		return err
 	}
 	if err := b.revolveCone(); err != nil {
 		return err
 	}
-	return b.revolveCup()
+	if err := b.revolveCup(); err != nil {
+		return err
+	}
+	return b.revolveCageRing()
 }
 
 // deriveTaperParams adds the on-apex derived geometry: the three raceway/roller cone angles, the
@@ -150,25 +158,41 @@ func taperDerivations() []struct{ name, expr string } {
 // as one feature — geometrically faithful where the earlier world-Z loft could not be (its end
 // circles lay on global-Z planes, not perpendicular to the tilted roller). See #54.
 func (b *PartBuilder) patternTaperedRollers(rm ResolvedMember) error {
-	spec, err := taperCRollerSpec(rm)
+	roller, err := b.revolveTaperedRoller(rm)
 	if err != nil {
 		return err
+	}
+	// Add the cage bar (a second body at the half-pitch azimuth) BEFORE patterning, so the single
+	// circular pattern — which copies every current body — arrays the roller and the bar together;
+	// the bar, offset half a pitch, then lands in every inter-roller gap. Skipped when the gap is
+	// too tight to seat a bar (only the small-end rim is built then).
+	if cageBarsFit(rm) {
+		if err := b.buildCageBar(); err != nil {
+			return err
+		}
+	}
+	return b.PatternCircular(roller, "roller_count")
+}
+
+// revolveTaperedRoller builds one tapered roller (Method C — a body of revolution about its own
+// tilted centerline, flat small end + on-apex cone + spherical-cap big end) and returns its
+// feature name so the complement can be patterned.
+func (b *PartBuilder) revolveTaperedRoller(rm ResolvedMember) (string, error) {
+	spec, err := taperCRollerSpec(rm)
+	if err != nil {
+		return "", err
 	}
 	sk, err := b.Sketch("XZ")
 	if err != nil {
-		return err
+		return "", err
 	}
 	if err := sk.GroundedDomedRollerSection(spec); err != nil {
-		return err
+		return "", err
 	}
 	if err := sk.AssertFullyConstrained(); err != nil {
-		return err
+		return "", err
 	}
-	roller, err := b.RevolveAboutCenterline(sk, "360 deg", "new")
-	if err != nil {
-		return err
-	}
-	return b.PatternCircular(roller, "roller_count")
+	return b.RevolveAboutCenterline(sk, "360 deg", "new")
 }
 
 // taperCRollerSpec derives one roller's Method-C meridian from the member's boundary dimensions and

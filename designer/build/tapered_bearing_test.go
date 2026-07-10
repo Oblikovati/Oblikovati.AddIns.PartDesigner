@@ -60,27 +60,73 @@ func TestTaperedRollerBuildsRollersAndRaces(t *testing.T) {
 	assertParam(t, h.added, "roller_sphere_r",
 		"sqrt(zeta_big * zeta_big + (roller_big_dia / 2) * (roller_big_dia / 2))")
 
+	// Cage params: the roller's constant azimuthal subtense, the half-pitch bar azimuth and width,
+	// and the small-end rim band/radii (see tapered_cage.go).
+	assertParam(t, h.added, "roller_subtend", "asin(tan(roller_half_angle) / tan(axis_angle))")
+	assertParam(t, h.added, "cage_half_pitch", "180 deg / roller_count")
+	assertParam(t, h.added, "bar_half_angle", "0.5 * (cage_half_pitch - roller_subtend)")
+	assertParam(t, h.added, "cage_rim_id", "2 * (apex_arm - cage_rim_near_z) * tan(cone_ray_angle) + 0.06 * roller_small_dia")
+
 	// The roller is now a single revolve about its own tilted centerline (Method C), not a loft.
 	if len(h.lofts) != 0 {
 		t.Fatalf("lofts = %d, want 0 (the roller is a centerline revolve, not a loft)", len(h.lofts))
 	}
+	// ONE pattern: it copies both the roller and the cage bar (arrayed together), so the bar lands
+	// half a pitch off each roller — in every gap — without a second pattern.
 	if len(h.patterns) != 1 || h.patterns[0].CountExpr != "roller_count" {
-		t.Errorf("patterns = %+v, want one roller_count pattern", h.patterns)
+		t.Errorf("patterns = %+v, want one roller_count pattern (arrays roller + bar together)", h.patterns)
 	}
-	// Three revolves in order: the domed roller (about its centerline), then the cone and cup rings.
-	if len(h.revolves) != 3 {
-		t.Fatalf("revolves = %d, want 3 (roller + cone + cup)", len(h.revolves))
+	// Five revolves in order: domed roller (centerline), cage bar (two-sided about Z), cone, cup,
+	// small-end rim.
+	if len(h.revolves) != 5 {
+		t.Fatalf("revolves = %d, want 5 (roller + bar + cone + cup + cage rim)", len(h.revolves))
 	}
-	if !h.revolves[0].AboutCenterline || h.revolves[0].Operation != "new" {
-		t.Errorf("roller revolve = %+v, want aboutCenterline / new", h.revolves[0])
+	if !h.revolves[0].AboutCenterline || h.revolves[0].Operation != "new" || h.revolves[0].AxisRef != "" {
+		t.Errorf("roller revolve = %+v, want aboutCenterline / new / no AxisRef", h.revolves[0])
 	}
-	if h.revolves[0].AxisRef != "" {
-		t.Errorf("roller revolve AxisRef = %q, want empty (revolves about the sketch centerline)", h.revolves[0].AxisRef)
+	// The bar is a two-sided (Angle == Angle2) wedge about Z, centred on the half-pitch plane.
+	bar := h.revolves[1]
+	if bar.AxisRef != "origin/axis/z" || bar.Angle != "bar_half_angle" || bar.Angle2 != "bar_half_angle" || bar.Operation != "new" {
+		t.Errorf("cage bar revolve = %+v, want ±bar_half_angle two-sided about origin/axis/z / new", bar)
 	}
-	for i, rv := range h.revolves[1:] {
-		if rv.AxisRef != "origin/axis/z" || rv.Operation != "new" {
-			t.Errorf("ring revolve[%d] = %+v, want origin/axis/z / new", i+1, rv)
+	for i, rv := range h.revolves[2:] { // cone, cup, rim: full revolves about Z
+		if rv.AxisRef != "origin/axis/z" || rv.Angle != "360 deg" || rv.Operation != "new" {
+			t.Errorf("ring revolve[%d] = %+v, want origin/axis/z 360 deg / new", i+2, rv)
 		}
+	}
+	// The cage bar sits on a hidden plane built through Z at the half-pitch azimuth.
+	if len(h.workPlanes) != 1 {
+		t.Fatalf("work planes = %d, want 1 (the angled cage-bar plane)", len(h.workPlanes))
+	}
+	if wp := h.workPlanes[0]; wp.Kind != "line-plane-angle" || wp.Angle != "cage_half_pitch" {
+		t.Errorf("cage-bar plane = %+v, want line-plane-angle at cage_half_pitch", wp)
+	}
+}
+
+// TestCageBarsFitAcrossMembers checks the inter-roller-gap guard: every ISO 355 member has a gap
+// wide enough for a bar, while a deliberately dense/degenerate member (many rollers, tiny angle)
+// falls back to the rim-only cage.
+func TestCageBarsFitAcrossMembers(t *testing.T) {
+	if !cageBarsFit(taperedMember("30208", 40, 80, 19.75, 14, 18)) {
+		t.Error("30208 should seat cage bars (gap ≈ 1.5°)")
+	}
+	if cageBarsFit(taperedMember("dense", 40, 80, 19.75, 5, 40)) {
+		t.Error("a 40-roller, 5° member has no inter-roller gap; want rim-only (no bars)")
+	}
+}
+
+// TestTaperedRimOnlyWhenGapTight checks that a member whose gap is too tight builds the small-end
+// rim but no bar (one fewer revolve, no work plane).
+func TestTaperedRimOnlyWhenGapTight(t *testing.T) {
+	h := &fakeHost{dof: 0}
+	if err := (TaperedRoller{}).Build(newBuilder(h, catalog.UnitsMillimetre), taperedMember("dense", 40, 80, 19.75, 5, 40)); err != nil {
+		t.Fatalf("Build error = %v", err)
+	}
+	if len(h.workPlanes) != 0 {
+		t.Errorf("rim-only cage built %d work planes, want 0 (no bar)", len(h.workPlanes))
+	}
+	if len(h.revolves) != 4 { // roller + cone + cup + rim (no bar)
+		t.Errorf("revolves = %d, want 4 (roller + cone + cup + rim, no bar)", len(h.revolves))
 	}
 }
 
