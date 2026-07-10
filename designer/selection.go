@@ -33,17 +33,13 @@ func (e *Engine) applySelection(controlID, value string) {
 		e.sel.standard = clearAll(value)
 	case searchControlID:
 		e.sel.search = strings.TrimSpace(value)
-	case familyControlID:
-		if f := e.familyByLabel(e.sel, value); f != nil {
-			e.sel.familyID = f.ID
-			e.sel.memberKey = "" // force reconcile to the new family's first size
+	case catalogControlID:
+		if _, ok := e.family(value); ok { // value is a family-leaf ID; category nodes are ignored
+			e.sel.familyID = value
+			e.sel.memberKey = "" // reconcile picks the new family's first size
 		}
-	case sizeControlID:
-		if fam, ok := e.family(e.sel.familyID); ok {
-			if m, ok := memberByLabel(fam, value); ok {
-				e.sel.memberKey = m.Key
-			}
-		}
+	case membersControlID:
+		e.sel.memberKey = value
 	}
 	e.sel = e.reconcile(e.sel)
 }

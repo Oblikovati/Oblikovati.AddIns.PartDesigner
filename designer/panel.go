@@ -22,6 +22,8 @@ const (
 	searchControlID   = "search"
 	familyControlID   = "family"
 	sizeControlID     = "size"
+	catalogControlID  = "catalog" // PanelTree of category→family
+	membersControlID  = "members" // PanelTable of the selected family's members
 )
 
 // ShowPanel creates (or replaces) the Part Designer dockable window, following Inventor's
