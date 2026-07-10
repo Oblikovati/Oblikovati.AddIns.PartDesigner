@@ -232,6 +232,44 @@ func (b *PartBuilder) RevolveAboutCenterline(sk *SketchContext, angleExpr, opera
 	return featureName(res), nil
 }
 
+// RevolveTwoSided revolves a profile about axisRef by halfAngleExpr in EACH direction from the
+// sketch plane (Angle + Angle2), so the swept wedge is CENTRED on the plane — the way to grow a
+// thin angular bar symmetrically about a chosen azimuth. Returns the feature name for patterning.
+func (b *PartBuilder) RevolveTwoSided(sk *SketchContext, axisRef, halfAngleExpr, operation string) (string, error) {
+	res, err := client.AddFeature(b.api.Features(), featureargs.Revolve{
+		SketchIndex: sk.index, ProfileIndex: 0, AxisRef: axisRef,
+		Angle: halfAngleExpr, Angle2: halfAngleExpr, Operation: operation,
+	})
+	if err != nil {
+		return "", fmt.Errorf("two-sided revolve sketch %d about %s by ±%q (%s): %w", sk.index, axisRef, halfAngleExpr, operation, err)
+	}
+	return featureName(res), nil
+}
+
+// AngledOrientedSketch builds a hidden construction work plane through the world Z axis at
+// angleExpr to the XZ plane, then a sketch on it whose Y axis is pinned to +Z (Inventor
+// AddWithOrientation). That makes the sketch frame (X, Y) = (radial, axial) — identical to XZ —
+// so an ordinary meridian drops onto the tilted plane unchanged, and revolving it a small angle
+// about Z lands a body at that azimuth about the bearing axis. It is how the tapered-roller cage
+// bars are placed in the gaps between rollers. Needs api ≥ v0.130.0 (SketchOrientation, #1920).
+func (b *PartBuilder) AngledOrientedSketch(angleExpr string) (*SketchContext, error) {
+	hidden := false
+	wp, err := b.api.WorkPlanes().Create(wire.CreateWorkPlaneArgs{
+		Kind: string(types.WorkPlaneLinePlaneAngle),
+		Refs: []string{types.WorkRefZAxis, types.WorkRefXZPlane}, Angle: angleExpr, Visible: &hidden,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("create angled work plane at %q: %w", angleExpr, err)
+	}
+	res, err := b.api.Sketch().CreateOnWorkPlaneOriented(wp.Index, wire.SketchOrientation{
+		Axis: types.WorkRefZAxis, AxisIsX: false, // pin sketch Y to +Z ⇒ X is radial, Y is axial
+	})
+	if err != nil {
+		return nil, fmt.Errorf("create oriented sketch on angled plane at %q (index %d): %w", angleExpr, wp.Index, err)
+	}
+	return &SketchContext{b: b, index: res.SketchIndex}, nil
+}
+
 // PatternCircular replicates the named source feature countExpr times evenly around the world Z
 // axis — how a bearing's single ball is arrayed into its full ball complement.
 func (b *PartBuilder) PatternCircular(sourceFeature, countExpr string) error {

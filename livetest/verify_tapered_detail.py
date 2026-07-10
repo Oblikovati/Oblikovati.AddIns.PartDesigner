@@ -6,7 +6,10 @@ big end is a SPHERICAL CAP centred on the shared apex (Method C: each roller is 
 revolution about its own tilted axis, the sketch centerline). The volume match proves the ribbed
 cone section and the domed-roller section both solved to DOF 0 and revolved to correct solids. Then
 screenshot it (the big-end rib and the tilted, domed rollers seated on both raceways must be
-visible). Usage: verify_tapered_detail.py <outdir>"""
+visible). The volume now also includes the representational CAGE — one bridge bar per inter-roller
+gap (revolved on a plane through Z at the half-pitch azimuth, so it sits between rollers) plus a
+small-end rim — so the match also proves the oriented-sketch cage bars solved and revolved.
+Usage: verify_tapered_detail.py <outdir>"""
 import json, math, sys, time
 import mcp
 
@@ -56,6 +59,30 @@ def revolve_volume(x_out, x_in, z0, z1, n=6000):
     return math.pi * acc * dz
 
 
+def cage_volume(g):
+    """The representational cage: ROLLERS bridge bars (each a thin rectangular ring-section wedge
+    spanning 2·bar_half about Z) plus one small-end continuous rim band. Mirrors tapered_cage.go."""
+    ar = math.radians(ALPHA)
+    cone_ray, axis = ar * 0.75, ar * 0.875
+    beta = math.atan((math.tan(ar) - math.tan(cone_ray)) / 2.0)
+    phi = math.asin(math.tan(beta) / math.tan(axis))            # roller azimuthal subtense
+    bar_half = 0.5 * (math.pi / ROLLERS - phi)
+    if bar_half <= 0.0087:                                      # gap floor: rim only
+        bars = 0.0
+    else:
+        pitch = (BORE + OUTER) / 2.0
+        bar_thick, bar_axial = 0.22 * g["r_sm"], 0.84 * g["ra"]
+        bar_id, bar_od = pitch - bar_thick, pitch + bar_thick
+        full_ring = math.pi * ((bar_od / 2) ** 2 - (bar_id / 2) ** 2) * bar_axial
+        bars = ROLLERS * full_ring * (bar_half / math.pi)       # wedge = 2·bar_half / 2π of a full ring
+    apex = ((BORE + OUTER) / 2.0 / 2.0) / math.tan(axis)
+    near_z, far_z = g["ra"] / 2.0 + 0.03 * WIDTH, 0.46 * WIDTH
+    rim_id = 2 * (apex - near_z) * math.tan(cone_ray) + 0.06 * g["r_sm"]
+    rim_od = 2 * (apex - far_z) * math.tan(ar) - 0.06 * g["r_sm"]
+    rim = math.pi * ((rim_od / 2) ** 2 - (rim_id / 2) ** 2) * (far_z - near_z)
+    return bars + rim
+
+
 def analytic_volume():
     g = geom()
     w2, br, orad = WIDTH / 2.0, BORE / 2.0, OUTER / 2.0
@@ -75,7 +102,7 @@ def analytic_volume():
     frustum = (math.pi * g["ra"] / 3.0) * (rb * rb + rb * rs + rs * rs)  # cone frustum (apex O)
     cap_h = g["sphere_r"] - g["zb"]                              # domed big-end spherical cap
     cap = (math.pi * cap_h * cap_h / 3.0) * (3 * g["sphere_r"] - cap_h)
-    return cone + cup + ROLLERS * (frustum + cap)
+    return cone + cup + ROLLERS * (frustum + cap) + cage_volume(g)
 
 
 def place():
