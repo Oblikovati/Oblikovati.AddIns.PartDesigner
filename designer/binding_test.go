@@ -123,7 +123,7 @@ func TestBoundMembersRowRedrivesViaNotify(t *testing.T) {
 	if _, err := e.Place("iso4017-hex-bolt", "d=8,l=40"); err != nil {
 		t.Fatalf("Place error = %v", err)
 	}
-	docsBefore := len(h.docs)
+	docsBefore := h.docCount()
 	e.bindActiveDocument()
 
 	ev, err := json.Marshal(wire.PanelValueChangedEvent{
@@ -135,10 +135,12 @@ func TestBoundMembersRowRedrivesViaNotify(t *testing.T) {
 	}
 	e.Notify(ev)
 
-	waitFor(t, func() bool { return hasParam(h.set, "length", "60 mm") },
+	// handlePanelEdit re-drives on a background goroutine, so observe host state through the
+	// h.mu-guarded accessors (not raw h.set/h.docs) to stay race-free.
+	waitFor(t, func() bool { return h.paramWasSet("length", "60 mm") },
 		"members-table Notify event never re-drove the bound document")
-	if len(h.docs) != docsBefore {
-		t.Errorf("documents = %d, want %d (Change-Size must not create a new document)", len(h.docs), docsBefore)
+	if got := h.docCount(); got != docsBefore {
+		t.Errorf("documents = %d, want %d (Change-Size must not create a new document)", got, docsBefore)
 	}
 }
 
