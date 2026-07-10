@@ -17,38 +17,50 @@ import (
 // replies. `existing` seeds parameters.list so the Set-vs-Add upsert path can be exercised;
 // `dof` is what constraintStatus reports (0 = fully constrained).
 type fakeHost struct {
-	existing     []string // parameter names already on the document
-	dof          int      // DOF returned by sketch.constraintStatus
-	failMethod   string   // when non-empty, this wire method returns an error
-	noPoints     bool     // when true, sketch.addEntity returns a circle with no centre point
-	noCylinder   bool     // when true, model.referenceKeys reports no cylindrical face
-	headCylinder bool     // when true, referenceKeys adds a second (head) cylinder above the shank
-	shortPolygon bool     // when true, a polygon add returns too few points (missing centre)
+	existing   []string // parameter names already on the document
+	dof        int      // DOF returned by sketch.constraintStatus
+	failMethod string   // when non-empty, this wire method returns an error
+	// failAfter lets a test reach a LATER call to the same repeated wire method (e.g. the Nth
+	// of many parameters.add calls across a multi-stage derivation) instead of always tripping
+	// on the first: the first failAfter matching calls succeed normally, and the (failAfter+1)th
+	// and every one after it fail. Zero (the default) preserves the original "fail every call"
+	// behaviour every pre-existing failMethod test relies on.
+	failAfter    int
+	matchCount   int  // internal: calls to failMethod seen so far, across the whole Build
+	noPoints     bool // when true, sketch.addEntity returns a circle with no centre point
+	noCylinder   bool // when true, model.referenceKeys reports no cylindrical face
+	headCylinder bool // when true, referenceKeys adds a second (head) cylinder above the shank
+	shortPolygon bool // when true, a polygon add returns too few points (missing centre)
 
-	methods      []string
-	added        []wire.ParameterSetArgs
-	set          []wire.ParameterSetArgs
-	circleRadius string
-	constraints  []string // geometric constraint kinds, in order
-	dimensions   []wire.AddDimensionArgs
-	extrude      featureargs.Extrude               // the last extrude (back-compat with the round-bar test)
-	extrudeKind  string                            // the last feature kind
-	extrudes     []featureargs.Extrude             // every extrude, in order
-	threads      []featureargs.Thread              // every cosmetic/cut thread, in order
-	lofts        []featureargs.Loft                // every loft, in order
-	coils        []featureargs.Coil                // every coil, in order
-	revolves     []featureargs.Revolve             // every revolve, in order
-	sweeps       []featureargs.Sweep               // every sweep, in order
-	patterns     []wire.CircularPatternFeatureArgs // every circular pattern, in order
-	workPlanes   []wire.CreateWorkPlaneArgs        // every work plane created, in order
-	featureCount int                               // running count, to name each added feature
+	methods        []string
+	added          []wire.ParameterSetArgs
+	set            []wire.ParameterSetArgs
+	circleRadius   string
+	entityKinds    []string      // wire.AddSketchEntityArgs.Kind of every sketch.addEntity call, in order
+	rectangleSeeds [][][]float64 // seed [corner,opposite] points of every rectangle entity added, in order
+	constraints    []string      // geometric constraint kinds, in order
+	dimensions     []wire.AddDimensionArgs
+	extrude        featureargs.Extrude               // the last extrude (back-compat with the round-bar test)
+	extrudeKind    string                            // the last feature kind
+	extrudes       []featureargs.Extrude             // every extrude, in order
+	threads        []featureargs.Thread              // every cosmetic/cut thread, in order
+	lofts          []featureargs.Loft                // every loft, in order
+	coils          []featureargs.Coil                // every coil, in order
+	revolves       []featureargs.Revolve             // every revolve, in order
+	sweeps         []featureargs.Sweep               // every sweep, in order
+	patterns       []wire.CircularPatternFeatureArgs // every circular pattern, in order
+	workPlanes     []wire.CreateWorkPlaneArgs        // every work plane created, in order
+	featureCount   int                               // running count, to name each added feature
 }
 
 // Call records the method and returns a minimal reply per the wire method.
 func (h *fakeHost) Call(method string, req []byte) ([]byte, error) {
 	h.methods = append(h.methods, method)
 	if method == h.failMethod {
-		return nil, errors.New("fake host: forced failure for " + method)
+		h.matchCount++
+		if h.matchCount > h.failAfter {
+			return nil, errors.New("fake host: forced failure for " + method)
+		}
 	}
 	switch method {
 	case wire.MethodParametersList:
@@ -93,6 +105,7 @@ func (h *fakeHost) listReply() ([]byte, error) {
 // recorded circleRadius is left untouched by a polygon add.
 func (h *fakeHost) addEntityReply(req []byte) ([]byte, error) {
 	a := decode[wire.AddSketchEntityArgs](req)
+	h.entityKinds = append(h.entityKinds, a.Kind)
 	if a.Radius != "" {
 		h.circleRadius = a.Radius
 	}
@@ -108,6 +121,7 @@ func (h *fakeHost) addEntityReply(req []byte) ([]byte, error) {
 		})
 	}
 	if a.Kind == "rectangle" {
+		h.rectangleSeeds = append(h.rectangleSeeds, a.Points)
 		return json.Marshal(wire.AddSketchEntityResult{
 			EntityID: 40, Kind: "rectangle",
 			EntityIDs: []uint64{40, 41, 42, 43}, // 4 edges

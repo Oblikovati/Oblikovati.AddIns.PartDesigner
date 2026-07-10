@@ -25,7 +25,8 @@ const (
 // outer diameter, width — drive everything; the pitch/ball/groove/shoulder diameters are derived
 // parameters, so editing the bore re-drives the whole assembly. The ball nests in the groove with a
 // uniform clearance (the groove arc sits just outside the ball surface), so the rings and balls stay
-// independent bodies — no boolean. Seals/shields are a tracked refinement (#53).
+// independent bodies — no boolean. Two flat 2Z shields (one per face) are added when they fit axially
+// (see shieldsFit); rubber seals are a further tracked refinement (#53).
 type BallBearing struct{}
 
 // Kind is the family `generator` binding for deep-groove ball bearings.
@@ -50,7 +51,10 @@ func (BallBearing) Build(b *PartBuilder, rm ResolvedMember) error {
 	if err := b.revolveGroovedRing("bore", "inner_shoulder_dia", true); err != nil {
 		return err
 	}
-	return b.revolveGroovedRing("outer_dia", "outer_shoulder_dia", false)
+	if err := b.revolveGroovedRing("outer_dia", "outer_shoulder_dia", false); err != nil {
+		return err
+	}
+	return b.revolveShields(rm)
 }
 
 // raceGap is the radial gap (outer_dia − bore) every rolling bearing's derived diameters are
@@ -103,7 +107,80 @@ func deriveBearingParams(b *PartBuilder) error {
 	if err := b.DeriveParam("inner_shoulder_dia", "pitch_dia - "+grooveShoulderTwoK+" * groove_radius"); err != nil {
 		return err
 	}
-	return b.DeriveParam("outer_shoulder_dia", "pitch_dia + "+grooveShoulderTwoK+" * groove_radius")
+	if err := b.DeriveParam("outer_shoulder_dia", "pitch_dia + "+grooveShoulderTwoK+" * groove_radius"); err != nil {
+		return err
+	}
+	return deriveShieldParams(b)
+}
+
+// shieldThickFraction caps a 2Z shield's axial thickness as a fraction of the bearing width.
+const shieldThickFraction = "0.12"
+
+// The 2Z shield's absolute clearances are UNIT-BEARING (mm). The parameter engine refuses to add a
+// bare unitless number to a length quantity, so "ball_dia / 2 + 0.2" silently evaluated to 0 and
+// collapsed both shields to zero volume (#53). Carrying "mm" makes each term a length. ISO-15
+// bearings are metric; a bare constant added to a length elsewhere must do the same.
+const (
+	shieldEquatorClr  = "0.2 mm" // near face held this far outboard of the ball equator
+	shieldEndClr      = "0.4 mm" // thickness kept this far off the ring end face
+	shieldRadialInset = "0.3 mm" // radial span held this far inside each raceway shoulder
+)
+
+// deriveShieldParams adds the 2Z shield band: near face just outboard of the ball equator, thickness
+// capped by the axial slack, and the radial span a hair inside the two raceway shoulders.
+func deriveShieldParams(b *PartBuilder) error {
+	dims := []struct{ name, expr string }{
+		{"shield_near_z", "ball_dia / 2 + " + shieldEquatorClr},
+		{"shield_thick", "min(width * " + shieldThickFraction + ", width / 2 - ball_dia / 2 - " + shieldEndClr + ")"},
+		{"shield_far_z", "shield_near_z + shield_thick"},
+		{"shield_id", "inner_shoulder_dia + " + shieldRadialInset},
+		{"shield_od", "outer_shoulder_dia - " + shieldRadialInset},
+	}
+	for _, d := range dims {
+		if err := b.DeriveParam(d.name, d.expr); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// shieldsFit reports whether both 2Z shields fit axially between the ball equator and the ring end
+// faces: axial slack width/2 - ball_dia/2 must exceed clearance+inset+min-thickness. Else no shields.
+func shieldsFit(rm ResolvedMember) bool {
+	gap := rm.Value("D") - rm.Value("d")
+	ballDia, width := 0.28*gap, rm.Value("B")
+	const sMin = 0.70 // shield_clr_ax 0.2 + ring_inset 0.2 + t_min 0.3
+	return width/2-ballDia/2 >= sMin
+}
+
+// revolveShields revolves the two metal shields (one per face) after the grooved rings, when they
+// fit; each is a flat annulus spanning the groove mouth, axially outboard of the ball equator.
+func (b *PartBuilder) revolveShields(rm ResolvedMember) error {
+	if !shieldsFit(rm) {
+		return nil
+	}
+	for _, negZ := range []bool{false, true} {
+		if err := b.revolveOneShield(negZ); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// revolveOneShield builds and revolves the shield on one bearing face (negZ selects which).
+func (b *PartBuilder) revolveOneShield(negZ bool) error {
+	sk, err := b.Sketch("XZ")
+	if err != nil {
+		return err
+	}
+	if err := sk.GroundedShieldSection("shield_id", "shield_od", "shield_near_z", "shield_far_z", negZ); err != nil {
+		return err
+	}
+	if err := sk.AssertFullyConstrained(); err != nil {
+		return err
+	}
+	_, err = b.Revolve(sk, "origin/axis/z", "360 deg", "new")
+	return err
 }
 
 // revolveRing builds one ring as a solid of revolution: a rectangular radial section from innerDia

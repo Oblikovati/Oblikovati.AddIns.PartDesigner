@@ -34,7 +34,8 @@ func bearingMember(designation string, bore, outerDia, width, balls float64) Res
 // TestBallBearingBuildsRingsAndBalls is the E1 acceptance check: the three tabulated dimensions and
 // the ball count are published, the pitch/ball/groove/shoulder diameters are derived, two grooved
 // rings are revolved about the axis and one ball about the pitch-circle radius, then the ball is
-// circular-patterned ball_count times.
+// circular-patterned ball_count times. The 6205 has axial slack for the 2Z shields (#53 task 4), so
+// they are revolved too — two more axis/360deg/new revolves after the rings.
 func TestBallBearingBuildsRingsAndBalls(t *testing.T) {
 	h := &fakeHost{dof: 0}
 	if err := (BallBearing{}).Build(newBuilder(h, catalog.UnitsMillimetre), bearingMember("6205", 25, 52, 15, 9)); err != nil {
@@ -52,13 +53,15 @@ func TestBallBearingBuildsRingsAndBalls(t *testing.T) {
 	assertParam(t, h.added, "inner_shoulder_dia", "pitch_dia - 1.1 * groove_radius")
 	assertParam(t, h.added, "outer_shoulder_dia", "pitch_dia + 1.1 * groove_radius")
 
-	if len(h.revolves) != 3 {
-		t.Fatalf("revolves = %d, want 3 (one ball + two rings)", len(h.revolves))
+	if len(h.revolves) != 5 {
+		t.Fatalf("revolves = %d, want 5 (one ball + two rings + two shields)", len(h.revolves))
 	}
 	for i, want := range []struct{ axis, angle string }{
 		{"origin/axis/x", "360 deg"}, // ball first, revolved about the pitch-circle radius
 		{"origin/axis/z", "360 deg"}, // inner ring
 		{"origin/axis/z", "360 deg"}, // outer ring
+		{"origin/axis/z", "360 deg"}, // 2Z shield, +Z face
+		{"origin/axis/z", "360 deg"}, // 2Z shield, −Z face
 	} {
 		if h.revolves[i].AxisRef != want.axis || h.revolves[i].Angle != want.angle || h.revolves[i].Operation != "new" {
 			t.Errorf("revolve[%d] = %+v, want %s / %s / new", i, h.revolves[i], want.axis, want.angle)
@@ -114,6 +117,76 @@ func TestBallBearingBuildErrorsPropagate(t *testing.T) {
 	}
 }
 
+// buildBallWithFailure runs BallBearing.Build for the 6205 (shieldsFit) member with method
+// returning an error starting on its (failAfter+1)th call — the first failAfter matching calls
+// succeed normally. See buildRollerWithFailure (roller_bearing_test.go) for the same idiom on the
+// sibling generator.
+func buildBallWithFailure(t *testing.T, method string, failAfter int) (*fakeHost, error) {
+	t.Helper()
+	h := &fakeHost{dof: 0, failMethod: method, failAfter: failAfter}
+	rm := bearingMember("6205", 25, 52, 15, 9)
+	err := (BallBearing{}).Build(newBuilder(h, catalog.UnitsMillimetre), rm)
+	return h, err
+}
+
+// TestBallBearingDeriveParamsErrorsPropagate walks deriveBearingParams' own derivation chain —
+// pitch diameter, ball diameter, groove radius, the two raceway shoulders — and on into
+// deriveShieldParams' band (#53), by letting parameters.list succeed failAfter times before
+// failing the next one: unlike TestBallBearingBuildErrorsPropagate (which always trips the very
+// first parameters.list call, inside PublishParams), this reaches each derive step's OWN
+// "if err != nil" guard, one at a time, including deriveShieldParams' (the #53-touched function).
+// No geometry is built until every derive succeeds, so every case must leave the bearing with
+// zero revolves and no ball pattern.
+func TestBallBearingDeriveParamsErrorsPropagate(t *testing.T) {
+	cases := []struct {
+		name      string
+		failAfter int
+	}{
+		{"pitch_dia (derivePitchDia)", 1},
+		{"ball_dia", 2},
+		{"groove_radius", 3},
+		{"inner_shoulder_dia", 4},
+		{"outer_shoulder_dia", 5},
+		{"shield_near_z (deriveShieldParams)", 6},
+	}
+	for _, c := range cases {
+		h, err := buildBallWithFailure(t, wire.MethodParametersList, c.failAfter)
+		if err == nil {
+			t.Errorf("%s: Build succeeded, want an error", c.name)
+		}
+		if len(h.revolves) != 0 || len(h.patterns) != 0 {
+			t.Errorf("%s: made geometry despite a derive failure: revolves=%d patterns=%d",
+				c.name, len(h.revolves), len(h.patterns))
+		}
+	}
+}
+
+// TestBallShieldStageErrorsPropagate targets revolveOneShield's own build (#53): its Sketch call,
+// GroundedShieldSection (section_shield.go) and AssertFullyConstrained. Each case lets the ball
+// complement and both grooved rings — the geometry that runs before revolveShields — through
+// first, so revolves must stop at exactly 3 (ball + two grooved rings; no shield completed) in
+// every case.
+func TestBallShieldStageErrorsPropagate(t *testing.T) {
+	cases := []struct {
+		name      string
+		method    string
+		failAfter int
+	}{
+		{"revolveOneShield +Z: Sketch", wire.MethodSketchCreate, 3},
+		{"GroundedShieldSection: AddRectangle", wire.MethodSketchAddEntity, 17},
+		{"revolveOneShield: AssertFullyConstrained", wire.MethodSketchConstraintStatus, 3},
+	}
+	for _, c := range cases {
+		h, err := buildBallWithFailure(t, c.method, c.failAfter)
+		if err == nil {
+			t.Errorf("%s: Build succeeded, want an error", c.name)
+		}
+		if len(h.revolves) != 3 {
+			t.Errorf("%s: revolves = %d, want 3 (ball + two grooved rings; no shield completed)", c.name, len(h.revolves))
+		}
+	}
+}
+
 // TestBallBearingGrooveFitsRaceway guards the ground-race-groove geometry against a vanishing
 // shoulder land: with groove_radius = 0.52·ball_dia and ball_dia = 0.28·gap, the groove's axial
 // half-span z_s = groove_radius·sqrt(1−0.55²) ≈ 0.835·groove_radius must stay inside width/2, or the
@@ -142,6 +215,101 @@ func TestBallBearingGrooveFitsRaceway(t *testing.T) {
 					fam.ID, m.Key, width/2, zsFactor*grooveRadius, land)
 			}
 		}
+	}
+}
+
+// TestBallShieldParams checks the 2Z shield band's derived parameters: the near face just outboard
+// of the ball equator, the thickness capped by the axial slack, and the radial span a hair inside
+// the two raceway shoulders.
+func TestBallShieldParams(t *testing.T) {
+	h := &fakeHost{dof: 0}
+	if err := (BallBearing{}).Build(newBuilder(h, catalog.UnitsMillimetre), bearingMember("6206", 30, 62, 16, 9)); err != nil {
+		t.Fatalf("Build error = %v", err)
+	}
+	// The absolute clearances carry "mm" units: a bare unitless constant cannot be added to a
+	// length param, so their omission collapsed the shields to zero volume (#53).
+	assertParam(t, h.added, "shield_near_z", "ball_dia / 2 + 0.2 mm")
+	assertParam(t, h.added, "shield_thick", "min(width * 0.12, width / 2 - ball_dia / 2 - 0.4 mm)")
+	assertParam(t, h.added, "shield_far_z", "shield_near_z + shield_thick")
+	assertParam(t, h.added, "shield_id", "inner_shoulder_dia + 0.3 mm")
+	assertParam(t, h.added, "shield_od", "outer_shoulder_dia - 0.3 mm")
+}
+
+// TestBallShieldsRevolvedBothFaces checks the two shields (both faces) are revolved after the two
+// grooved rings: >=4 revolves, the last two z/360 deg/new.
+func TestBallShieldsRevolvedBothFaces(t *testing.T) {
+	h := &fakeHost{dof: 0}
+	if err := (BallBearing{}).Build(newBuilder(h, catalog.UnitsMillimetre), bearingMember("6206", 30, 62, 16, 9)); err != nil {
+		t.Fatalf("Build error = %v", err)
+	}
+	if len(h.revolves) < 4 { // ball + 2 rings + 2 shields (ball is 1 revolve, rings 2, shields 2 => 5)
+		t.Fatalf("revolves = %d, want >=4 with two shields", len(h.revolves))
+	}
+	shields := h.revolves[len(h.revolves)-2:]
+	for i, rv := range shields {
+		if rv.AxisRef != "origin/axis/z" || rv.Angle != "360 deg" || rv.Operation != "new" {
+			t.Errorf("shield revolve[%d] = %+v, want z/360 deg/new", i, rv)
+		}
+	}
+}
+
+// TestBallShieldsMirrorZSign is the regression guard for the −Z shield's mirroring: revolveOneShield
+// steers GroundedShieldSection's rectangle seed onto the +Z or −Z face purely via the negZ sign flip
+// (section_shield.go), and nothing else in the build distinguishes the two shields — same dimension
+// expressions, same revolve axis/angle/op. A defect that dropped the sign (e.g. negZ ignored, or
+// `sign := 1.0` unconditional) would still pass every other shield test, so this asserts the actual
+// mechanism directly: the two shield rectangles' seed corners sit on opposite sides of Z=0.
+func TestBallShieldsMirrorZSign(t *testing.T) {
+	h := &fakeHost{dof: 0}
+	if err := (BallBearing{}).Build(newBuilder(h, catalog.UnitsMillimetre), bearingMember("6206", 30, 62, 16, 9)); err != nil {
+		t.Fatalf("Build error = %v", err)
+	}
+	if len(h.rectangleSeeds) != 2 {
+		t.Fatalf("rectangleSeeds = %d, want 2 (one rectangle per shield)", len(h.rectangleSeeds))
+	}
+	faceZ := make([]float64, len(h.rectangleSeeds))
+	for i, seed := range h.rectangleSeeds {
+		if len(seed) != 2 || len(seed[0]) != 2 || len(seed[1]) != 2 {
+			t.Fatalf("shield[%d] seed = %v, want two [x,y] corners", i, seed)
+		}
+		faceZ[i] = seed[0][1] // corner's Z (sketch-plane Y on XZ); opposite corner shares its sign
+	}
+	if faceZ[0] == 0 || faceZ[1] == 0 {
+		t.Fatalf("shield seed Z = %v, want both nonzero", faceZ)
+	}
+	if (faceZ[0] > 0) == (faceZ[1] > 0) {
+		t.Errorf("shield seed Z signs = %v, want opposite signs (one +Z face, one −Z face)", faceZ)
+	}
+}
+
+// TestShieldsFit checks the axial-slack guard: every 60/62/63-series member (worst case 6200, slack
+// 1.70mm) gets shields, but a synthetic fat-ball/thin-ring member (no room) falls back to none.
+func TestShieldsFit(t *testing.T) {
+	if !shieldsFit(bearingMember("6200", 10, 30, 9, 8)) { // worst slack 1.70mm
+		t.Error("shieldsFit false for 6200; every 60/62/63 member should get shields")
+	}
+	if shieldsFit(bearingMember("x", 10, 40, 2, 8)) { // fat ball, thin ring → no room
+		t.Error("shieldsFit true for a fat-ball/thin-ring member; want no-shield fallback")
+	}
+}
+
+// TestBallShieldFallbackSkipsShields is the Build-level regression for shieldsFit's false branch:
+// TestShieldsFit only checks the predicate. With a fat-ball/thin-ring member (no axial room),
+// revolveShields must return nil before building either face, leaving only the ball + two grooved
+// rings revolved (3 revolves) — no shield revolve at all. It would fail if shieldsFit were removed
+// or inverted, since two more shield revolves (5 total, per TestBallShieldsRevolvedBothFaces) would
+// then appear.
+func TestBallShieldFallbackSkipsShields(t *testing.T) {
+	h := &fakeHost{dof: 0}
+	m := bearingMember("x", 10, 40, 2, 8) // fat ball, thin ring: no axial room for shields
+	if shieldsFit(m) {
+		t.Fatal("test fixture unexpectedly passes shieldsFit; no longer degenerate")
+	}
+	if err := (BallBearing{}).Build(newBuilder(h, catalog.UnitsMillimetre), m); err != nil {
+		t.Fatalf("Build error = %v", err)
+	}
+	if len(h.revolves) != 3 {
+		t.Fatalf("revolves = %d, want 3 (ball + inner ring + outer ring, no shields)", len(h.revolves))
 	}
 }
 
