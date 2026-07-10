@@ -15,7 +15,7 @@
 - **Functions 4–20 lines; files < 500 lines; explicit types (no `any` in new logic, no untyped funcs); early returns; max 2 indent levels.**
 - **Every new function gets a test; bug fixes get a regression test.** Coverage > 80%, duplication < 3% before any PR.
 - **API versioning is automatic:** `release.yml` derives the version from the commit scope on merge to `develop`. NEVER hand-edit `version.go`/`CHANGELOG.md`. Use a `feat:` scope so it bumps the MINOR version.
-- **Contract-first ordering:** merge + release Phase 1 (API) BEFORE building Phase 2/3 against the new symbols; `git pull --ff-only origin develop` the `../Oblikovati.API` sibling after the release so the head/add-in compile (the known "stale API sibling breaks `make run`" failure mode).
+- **Ship order (REVISED per user):** do NOT submit or merge the API PR until the whole host implementation is built and **live-verified end-to-end**. Develop the API changes on a local branch *inside the `../Oblikovati.API` sibling checkout*; the `go.work` replace resolves `oblikovati.org/api` to that directory, so the head and add-in compile + run against the un-merged branch locally (no release needed to build). Only after the live MCP-bridge screenshot verification passes: submit + merge + release the API PR, fast-forward the sibling to the release commit, then submit the head PR and the add-in PR. This keeps a broken/unproven API surface from ever being released.
 - **Full local suite + golangci-lint + markdownlint + SPDX check + cross-platform build** before each PR; `Closes #48` only in the final (add-in) PR body; the API/head PRs reference it with `Part of #48`.
 - **Do not squash commits** (they carry granular context); merge PRs with `--merge --delete-branch`.
 - **Repo paths (absolute):** API = `/home/vmiguel/git/oblikovati-workspace/Oblikovati.API`; head = `/home/vmiguel/git/oblikovati-workspace/Oblikovati/head`; add-in = `/home/vmiguel/git/oblikovati-workspace/Oblikovati.AddIns.PartDesigner`.
@@ -271,34 +271,32 @@ cd Oblikovati.API && git add client/panel_controls.go client/panel_controls_test
 git commit -m "feat(client): add PanelTree/PanelTable builders (Part of #48)"
 ```
 
-### Task 1.4: Open + merge PR 1, release, pull sibling
+### Task 1.4: Prepare the API branch locally (do NOT PR yet)
 
-- [ ] **Step 1: Push + open PR.**
+Per the revised ship order, the API PR is submitted only after live verification
+(Phase 4). Here we just stage the branch so the head + add-in build against it.
 
-```bash
-cd Oblikovati.API && git push -u origin feat/panel-tree-table
-gh pr create --repo <api-remote> --base develop \
-  --title "feat: PanelTree + PanelTable panel controls" \
-  --body "Adds two generic panel-control kinds (tree, data-table) to the panel vocabulary for content-center-style browse surfaces. Part of Oblikovati.AddIns.PartDesigner#48."
-```
+- [ ] **Step 1: Full API suite green on the branch.**
 
-- [ ] **Step 2: Wait for CI green** (build, race, SonarCloud `new_coverage` ≥ 80, duplication < 3%). If coverage short, add DTO/builder cases.
+Run: `cd Oblikovati.API && go test ./...`
+Expected: PASS.
 
-- [ ] **Step 3: Merge** `gh pr merge <N> --merge --delete-branch`.
+- [ ] **Step 2: Keep the sibling on this branch so `go.work` resolves the new symbols.**
 
-- [ ] **Step 4: Confirm auto-release bumped the MINOR version** (check the new tag `vX.(Y+1).0` on `develop`). Record the released version — Phase 2/3 require it.
+Run: `cd Oblikovati.API && git status -sb`
+Expected: on `feat/panel-tree-table` with the three commits (Tasks 1.1–1.3); working tree clean. Do NOT push or open a PR yet — Phase 4 does that after live verification.
 
-- [ ] **Step 5: Pull the sibling so downstream compiles.**
+- [ ] **Step 3: Sanity-check downstream sees the symbols.**
 
-Run: `cd Oblikovati.API && git checkout develop && git pull --ff-only origin develop`
-Expected: fast-forwarded to the release commit; `git describe --tags` shows the new version.
+Run: `cd Oblikovati/head && go build ./internal/native/ 2>&1 | head` and `cd Oblikovati.AddIns.PartDesigner && go build ./designer/... 2>&1 | head`
+Expected: no `undefined: types.PanelTree` / `wire.TreeNode` errors (they resolve to the local sibling branch).
 
 ---
 
 ## Phase 2 — Oblikovati GPL head: render the two kinds (PR 2)
 
 Branch: `feat/panel-tree-table-render` off `origin/develop` in `Oblikovati`.
-Prereq: Phase 1 released + sibling pulled. Requires the head to build (`cd Oblikovati/head && make build`).
+Prereq: Phase 1 branch staged locally (sibling on `feat/panel-tree-table`). Requires the head to build (`cd Oblikovati/head && make build`) against the local API branch.
 
 ### Task 2.1: Add the `BeginTableScrollX` wrapper (horizontal scroll, non-regressing)
 
@@ -609,9 +607,9 @@ cd Oblikovati && git add head/ui/addin_table.go head/ui/addin_table_test.go head
 git commit -m "feat(head/ui): render PanelTable control (Part of #48)"
 ```
 
-### Task 2.4: Head build + smoke + open/merge PR 2
+### Task 2.4: Head build + smoke (commit locally, no PR yet)
 
-- [ ] **Step 1: Full head build + smoke.**
+- [ ] **Step 1: Full head build + smoke** (against the local API branch).
 
 Run: `cd Oblikovati/head && make build && make smoke`
 Expected: build exit 0; smoke renders 5 frames exit 0.
@@ -619,18 +617,7 @@ Expected: build exit 0; smoke renders 5 frames exit 0.
 - [ ] **Step 2: Full repo suite + lint.**
 
 Run: `cd Oblikovati && go test ./... && (cd head && golangci-lint run)`
-Expected: pass.
-
-- [ ] **Step 3: Push, open PR, wait green, merge.**
-
-```bash
-cd Oblikovati && git push -u origin feat/panel-tree-table-render
-gh pr create --base develop --title "feat(head): render PanelTree + PanelTable controls" \
-  --body "Renders the two new panel-control kinds in the docked-panel UI via the imgui wrapper (tree = TreeNodeSelectable; table = new BeginTableScrollX). Part of Oblikovati.AddIns.PartDesigner#48."
-# wait for CI green (build, head, race, SonarCloud), then:
-gh pr merge <N> --merge --delete-branch
-git checkout develop && git pull --ff-only origin develop
-```
+Expected: pass. Commit any remaining changes on `feat/panel-tree-table-render`. Do NOT push/PR — Phase 4 ships after live verification.
 
 ---
 
@@ -1117,41 +1104,85 @@ cd Oblikovati.AddIns.PartDesigner && git add designer/catalog/tree.go designer/c
 git commit -m "refactor(#48): extract catalog.TreeOf(families) for filtered subtrees"
 ```
 
-### Task 3.5: Full add-in suite, live screenshot validation, PR
+### Task 3.5: Full add-in suite (commit locally, no PR yet)
 
-**Files:** none (validation + PR).
+**Files:** none (validation).
 
 - [ ] **Step 1: Full add-in suite + coverage + lint.**
 
 Run: `cd Oblikovati.AddIns.PartDesigner && CGO_ENABLED=0 go test ./designer/... -cover && golangci-lint run && markdownlint docs/`
 Expected: all pass; coverage > 80% on `designer/`.
 
-- [ ] **Step 2: Duplication check.** Run the repo's duplication tool (see `Makefile`/CI; e.g. `make dup` or the jscpd/`dupl` invocation) — must be < 3%.
+- [ ] **Step 2: Duplication check.** Run the repo's duplication tool (see `Makefile`/CI; e.g. `make dup` or the jscpd/`dupl` invocation) — must be < 3%. Commit remaining changes on `feat/48-content-center-browse`. Do NOT push/PR yet.
 
-- [ ] **Step 3: Live screenshot validation (requires Phase 2 merged into the head).** Per the Live-tests rule: `make install` the add-in into `../Oblikovati/head/addins`, launch the head with `OBK_ADDINS_DIR` + `DISPLAY=:1`, wait for the MCP bridge (`127.0.0.1:7800`), then:
-  - open the Part Designer panel; screenshot — confirm a tree renders with category nodes.
-  - expand Bearings → Deep-groove; click a family leaf; screenshot — confirm the member table populates with d/D/B… columns and rows.
-  - click the 6202 row, then Place; screenshot the viewport — confirm the bearing part appears.
-  - Follow the live-head launch recipe (Popen as a child of one foreground python; never background the head — see memory `live-head-launch-popen-pattern`).
+---
 
-- [ ] **Step 4: Open PR (this one Closes #48).**
+## Phase 4 — Live end-to-end verification, THEN ship all three PRs
+
+Gate: the API PR is submitted only after this live verification passes (user
+directive). Everything so far is committed locally on three branches, built
+against the local API sibling branch.
+
+### Task 4.1: Live MCP-bridge screenshot verification (MANDATORY)
+
+**Files:** none (a throwaway live-test driver under the scratchpad).
+
+- [ ] **Step 1: Install the add-in + launch the head against the local API branch.** `make install` the add-in into `../Oblikovati/head/addins`; launch the head (built in Task 2.4, which links the local `feat/panel-tree-table` API) with `OBK_ADDINS_DIR` + `DISPLAY=:1`; wait for the MCP bridge (`127.0.0.1:7800`). Follow the live-head launch recipe: Popen the head as a child of ONE foreground python; never background it (memory `live-head-launch-popen-pattern`).
+
+- [ ] **Step 2: Drive + screenshot the browse flow** (memory `always-visual-confirmation`):
+  - open the Part Designer panel → screenshot: a **tree** renders with category nodes (Fasteners/Bearings/Structural/Shaft), top levels expanded.
+  - click Bearings → Deep-groove disclosure, then a family leaf → screenshot: the **member table** populates below with all parameter columns (d/D/B/…) and one row per size, header pinned, horizontal scroll present if columns overflow.
+  - click a member row (e.g. 6202) → screenshot: the row highlights (selection round-trip).
+  - click **Place** → screenshot the viewport: the bearing part appears; confirm it is a real DOF-0 parametric part (tree shows published parameters).
+
+- [ ] **Step 3: If any screenshot is wrong, FIX before shipping.** A blank tree, an empty/misaligned table, no horizontal scroll, a click that doesn't populate the table, or Place not firing → return to the relevant Phase 2/3 task. This is the whole point of gating the API PR on live verification. Re-verify after the fix.
+
+- [ ] **Step 4: Save the passing screenshots** to the scratchpad and reference them in the add-in PR body.
+
+### Task 4.2: Ship PR 1 — Oblikovati.API (release)
+
+- [ ] **Step 1: Push + open the API PR.**
+
+```bash
+cd Oblikovati.API && git push -u origin feat/panel-tree-table
+gh pr create --base develop \
+  --title "feat: PanelTree + PanelTable panel controls" \
+  --body "Two generic panel-control kinds (tree, data-table) for content-center-style browse surfaces, verified live in the head + PartDesigner add-in before release. Part of Oblikovati.AddIns.PartDesigner#48."
+```
+
+- [ ] **Step 2: Wait CI green** (build, race, SonarCloud `new_coverage` ≥ 80, duplication < 3%), then `gh pr merge <N> --merge --delete-branch`.
+
+- [ ] **Step 3: Confirm auto-release** bumped the MINOR version (new tag on `develop`); fast-forward the sibling: `cd Oblikovati.API && git checkout develop && git pull --ff-only origin develop`. Record the released version.
+
+### Task 4.3: Ship PR 2 — Oblikovati head
+
+- [ ] **Step 1:** Rebase `feat/panel-tree-table-render` onto the updated `origin/develop` (now carrying the released API `go.mod` bump if any); rebuild `make build && make smoke` to confirm it still links against the released API.
+- [ ] **Step 2: Push, open PR, wait green, merge.**
+
+```bash
+cd Oblikovati && git push -u origin feat/panel-tree-table-render
+gh pr create --base develop --title "feat(head): render PanelTree + PanelTable controls" \
+  --body "Renders the two new panel-control kinds in the docked-panel UI (tree = TreeNodeSelectable; table = new BeginTableScrollX). Live-verified with the PartDesigner browse surface. Part of Oblikovati.AddIns.PartDesigner#48."
+gh pr merge <N> --merge --delete-branch
+git checkout develop && git pull --ff-only origin develop
+```
+
+### Task 4.4: Ship PR 3 — PartDesigner add-in (Closes #48)
+
+- [ ] **Step 1:** Rebase `feat/48-content-center-browse` onto `origin/main`; ensure the add-in `go.mod`/`go.work` reference the released API version; full suite green.
+- [ ] **Step 2: Push, open PR (Closes #48), attach the Task 4.1 screenshots, wait green, merge.**
 
 ```bash
 cd Oblikovati.AddIns.PartDesigner && git push -u origin feat/48-content-center-browse
 gh pr create --base main --title "feat: content-center tree + table browse (in-panel)" \
-  --body "Replaces the Part/Size dropdowns with an in-panel category tree + member parameter table + Place, via the new PanelTree/PanelTable API controls. Screenshots attached.
+  --body "Replaces the Part/Size dropdowns with an in-panel category tree + member parameter table + Place, via the new PanelTree/PanelTable API controls. Live screenshots attached.
 
 Closes #48"
-```
-
-- [ ] **Step 5: Wait green, merge.**
-
-```bash
 gh pr merge <N> --merge --delete-branch
 git checkout main && git pull --ff-only origin main
 ```
 
-- [ ] **Step 6: Update memory** — note #48 done in the PartDesigner memory (`partdesigner-content-center-milestone` / `partdesigner-addin`), and that PanelTree/PanelTable now exist in the API for reuse.
+- [ ] **Step 3: Update memory** — note #48 done in the PartDesigner memory (`partdesigner-content-center-milestone` / `partdesigner-addin`), and that PanelTree/PanelTable now exist in the API for reuse.
 
 ---
 
