@@ -111,11 +111,15 @@ type TableRow struct {
 Fields added to `PanelControlSpec`:
 
 ```go
-Nodes     []TreeNode `json:"nodes,omitempty"`     // PanelTree
-Columns   []string   `json:"columns,omitempty"`   // PanelTable header
-TableRows []TableRow `json:"tableRows,omitempty"` // PanelTable body (named to avoid PanelReferenceList's Rows)
+Nodes        []TreeNode `json:"nodes,omitempty"`        // PanelTree
+TableColumns []string   `json:"tableColumns,omitempty"` // PanelTable header (Columns is already []GridTrack for PanelGrid)
+TableRows    []TableRow `json:"tableRows,omitempty"`    // PanelTable body (Rows is already PanelReferenceList's)
 // existing Value string is reused as the selected nodeID / rowKey (drives highlight)
 ```
+
+Note: `PanelControlSpec.Columns` already exists as `[]types.GridTrack` (grid tracks)
+and `Rows` as `[]PanelReferenceRow`, so the table's header/body fields are named
+`TableColumns` / `TableRows` to avoid collision.
 
 Design choices and why:
 
@@ -150,12 +154,16 @@ so every file stays < 500 lines:
   for leaves; on `IsItemClicked` emit `PanelValueChangedEvent{ControlID,
   Value: node.ID}` via the session. ImGui provides indent, twirl hit-testing,
   selection highlight, and vertical scroll.
-- `head/ui/addin_table.go` — `drawPanelTable`: `BeginTable(id, len(Columns), …)`
-  with imgui's `ScrollX|ScrollY|Borders|RowBg` flags → `TableSetupColumn` per
-  column, `TableSetupScrollFreeze(0,1)` to pin the header row,
-  `TableHeadersRow`, then per row `PushIDInt(i)` + a row-spanning `Selectable`
-  keyed on `row.Key`; on click emit `Value: row.Key`. **Horizontal scroll is
-  imgui-native** (`ScrollX`) — the correct answer for the narrow dock.
+- `head/ui/addin_table.go` — `drawPanelTable`: a **new** `native.BeginTableScrollX`
+  wrapper (backed by a new `obk_ig_begin_table_scrollx` C shim that ORs
+  `ImGuiTableFlags_ScrollX` onto the existing `Borders|RowBg|Resizable|ScrollY`) —
+  a *new variant* rather than changing the shared `obk_ig_begin_table`, because six
+  existing tables (keymap, parameters, history, bom, derived, file-dialog) use it and
+  `ScrollX` changes column auto-sizing. Then `TableSetupColumn` per column,
+  `TableSetupScrollFreeze(0,1)` to pin the header row, `TableHeadersRow`, then per
+  row `PushIDInt(i)` + a row-spanning `Selectable` keyed on `row.Key`; on
+  `IsItemClicked` emit `PanelValueChanged(windowID, control.ID, row.Key)`.
+  **Horizontal scroll is imgui-native** — the correct answer for the narrow dock.
 
 Hot-path discipline: the spec's strings are drawn as-is; **no per-row string
 building per frame**, no `make()` on the render path (holds the ≥60fps / zero-
@@ -194,9 +202,10 @@ Merge order: **PR1 → PR2 → PR3.**
 
 - **API:** `TreeNode`/`TableRow`/`PanelControlSpec` JSON round-trip; client-builder
   unit tests; kind ordinal + `String()` tests.
-- **Head:** headless render test — a `PanelTree`/`PanelTable` spec draws without
-  panic; a simulated click emits the expected `PanelValueChangedEvent` (mirrors
-  `addin_panels_test.go`).
+- **Head:** the draw funcs call live imgui and cannot run headless (existing head
+  tests only cover pure helpers/logic, never native draw calls), so automated
+  coverage is limited to any pure helper (e.g. `firstUseSeed`, table-model
+  shaping); rendering correctness is validated **live via MCP screenshot** below.
 - **Add-in (fakeHost):** tree carries family leaves under the correct category
   path and honors filters; selecting a family populates the members table with
   all columns; selecting a row then Place calls `Place(familyID, memberKey)`.
