@@ -32,8 +32,9 @@ func rollerMember(designation string, bore, outerDia, width, rollers float64) Re
 
 // TestRollerBearingBuildsRollersAndRings is the E2 roller acceptance check: the tabulated
 // dimensions and roller count are published, the roller/race parameters derived, one cylindrical
-// roller extruded symmetric about the mid-plane and patterned by roller_count, then the two rings
-// revolved — with the rollers built BEFORE the rings so the pattern does not replicate the rings.
+// roller revolved about its own centerline (chamfered ends) and patterned by roller_count, then the
+// two rings revolved — with the rollers built BEFORE the rings so the pattern does not replicate
+// the rings.
 func TestRollerBearingBuildsRollersAndRings(t *testing.T) {
 	h := &fakeHost{dof: 0}
 	if err := (RollerBearing{}).Build(newBuilder(h, catalog.UnitsMillimetre), rollerMember("NU205", 25, 52, 15, 12)); err != nil {
@@ -47,16 +48,12 @@ func TestRollerBearingBuildsRollersAndRings(t *testing.T) {
 	assertParam(t, h.added, "outer_race_dia", "pitch_dia + roller_dia + (outer_dia - bore) * 0.012")
 	assertParam(t, h.added, "inner_race_dia", "pitch_dia - roller_dia - (outer_dia - bore) * 0.012")
 
-	if len(h.extrudes) != 1 {
-		t.Fatalf("extrudes = %d, want 1 (the roller)", len(h.extrudes))
+	// The chamfered roller is now a REVOLVE about its own centerline, not an extrude: the roller
+	// complement is revolves[0], followed by the inner + outer ring revolves about Z.
+	if len(h.revolves) < 3 {
+		t.Fatalf("revolves = %d, want >=3 (roller-about-centerline + inner + outer ring)", len(h.revolves))
 	}
-	if h.extrudes[0].Distance != "roller_length" || h.extrudes[0].Operation != "new" || h.extrudes[0].Direction != "symmetric" {
-		t.Errorf("roller extrude = %+v, want roller_length/new/symmetric", h.extrudes[0])
-	}
-	if len(h.revolves) != 2 {
-		t.Fatalf("revolves = %d, want 2 (inner + outer ring)", len(h.revolves))
-	}
-	for i, rv := range h.revolves {
+	for i, rv := range h.revolves[len(h.revolves)-2:] {
 		if rv.AxisRef != "origin/axis/z" || rv.Angle != "360 deg" || rv.Operation != "new" {
 			t.Errorf("ring revolve[%d] = %+v, want z / 360 deg / new", i, rv)
 		}
@@ -137,5 +134,24 @@ func TestFlangesFitAcrossFamily(t *testing.T) {
 	// Degenerate: a roller nearly as long as the ring leaves no overhang band → no flanges.
 	if flangesFit(rollerMember("x", 30, 62, 1.0, 13)) {
 		t.Error("flangesFit true for a member with no axial overhang; want plain-ring fallback")
+	}
+}
+
+// The chamfered roller is revolved about its own centerline; assert the chamfer param + that the
+// roller feature is a 360deg/new revolve (about the centerline, not the Z axis).
+func TestRollerChamferParams(t *testing.T) {
+	h := &fakeHost{dof: 0}
+	if err := (RollerBearing{}).Build(newBuilder(h, catalog.UnitsMillimetre), rollerMember("NU206", 30, 62, 16, 13)); err != nil {
+		t.Fatalf("Build error = %v", err)
+	}
+	assertParam(t, h.added, "roller_chamfer", "roller_dia * 0.1")
+}
+
+func TestRollerChamferFits(t *testing.T) {
+	if !rollerChamferFits(rollerMember("x", 15, 35, 11, 11)) { // NU202, min leg 0.56mm
+		t.Error("rollerChamferFits false for NU202; every member should chamfer")
+	}
+	if rollerChamferFits(rollerMember("x", 100, 100.2, 11, 11)) { // ~0 gap → sub-floor leg
+		t.Error("rollerChamferFits true for a sub-floor chamfer; want plain-roller fallback")
 	}
 }

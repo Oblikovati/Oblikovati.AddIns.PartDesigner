@@ -18,11 +18,12 @@ const (
 
 // RollerBearing generates a cylindrical roller bearing (ISO 15, NU/N series) representationally: a
 // plain inner ring, an outer ring that is an inward-opening ⊐ channel with two integral guide
-// flanges (when flangesFit allows it, else a plain ring), and a circular pattern of straight
-// cylindrical rollers on the pitch circle, their axes parallel to the bearing axis. Bore, outer
-// diameter and width drive everything; the pitch/roller diameters, roller length, race diameters
-// and flange band are derived, so the bearing re-drives with the size and roller_count drives the
-// pattern. Roller-end chamfers and the cage are a tracked refinement (#53).
+// flanges (when flangesFit allows it, else a plain ring), and a circular pattern of cylindrical
+// rollers on the pitch circle — each roller revolved about its own centerline with 45° end
+// chamfers built into the meridian (when rollerChamferFits allows it, else a plain cylinder), axes
+// parallel to the bearing axis. Bore, outer diameter and width drive everything; the pitch/roller
+// diameters, roller length, race diameters and flange band are derived, so the bearing re-drives
+// with the size and roller_count drives the pattern. The cage is a tracked refinement (#53).
 type RollerBearing struct{}
 
 // Kind is the family `generator` binding for cylindrical roller bearings.
@@ -38,7 +39,7 @@ func (RollerBearing) Build(b *PartBuilder, rm ResolvedMember) error {
 	if err := deriveRollerParams(b); err != nil {
 		return err
 	}
-	if err := b.patternRollers(); err != nil {
+	if err := b.patternRollers(rm); err != nil {
 		return err
 	}
 	if err := b.revolveRing("bore", "inner_race_dia"); err != nil {
@@ -63,7 +64,47 @@ func deriveRollerParams(b *PartBuilder) error {
 	if err := deriveRacesClearing(b, "roller_dia"); err != nil {
 		return err
 	}
-	return deriveFlangeParams(b)
+	if err := deriveFlangeParams(b); err != nil {
+		return err
+	}
+	return deriveRollerChamferParams(b)
+}
+
+const rollerChamferFraction = "0.1" // 45deg chamfer leg as a fraction of roller_dia
+
+// deriveRollerChamferParams adds the roller-end chamfer leg (45deg, equal axial & radial leg).
+func deriveRollerChamferParams(b *PartBuilder) error {
+	return b.DeriveParam("roller_chamfer", "roller_dia * "+rollerChamferFraction)
+}
+
+// rollerChamferFits reports whether a visible 45deg end chamfer fits: leg below half the roller
+// radius (end disc stays real) and above the visibility floor. Else the roller is built plain.
+func rollerChamferFits(rm ResolvedMember) bool {
+	gap := rm.Value("D") - rm.Value("d")
+	rollerDia := 0.28 * gap
+	leg := 0.10 * rollerDia
+	const cMin, epsClr = 0.15, 0.10
+	return leg < rollerDia/2-epsClr && leg >= cMin
+}
+
+// buildRoller builds one cylindrical roller standing on the pitch circle as a body of revolution
+// about its own centerline: chamfered when rollerChamferFits, else a plain cylinder. Returns the
+// roller feature name so the caller can pattern it.
+func (b *PartBuilder) buildRoller(rm ResolvedMember) (string, error) {
+	if !rollerChamferFits(rm) {
+		return b.buildPlainRoller()
+	}
+	sk, err := b.Sketch("XZ")
+	if err != nil {
+		return "", err
+	}
+	if err := sk.GroundedChamferedRollerSection(half("pitch_dia"), "roller_dia", "roller_length", "roller_chamfer"); err != nil {
+		return "", err
+	}
+	if err := sk.AssertFullyConstrained(); err != nil {
+		return "", err
+	}
+	return b.RevolveAboutCenterline(sk, "360 deg", "new")
 }
 
 // Flange proportions: the axial clearance from a roller end to the flange inner face, as an
@@ -118,21 +159,30 @@ func (b *PartBuilder) revolveFlangedOuterRing(rm ResolvedMember) error {
 	return err
 }
 
-// patternRollers extrudes one cylindrical roller (a circle of roller_dia at the pitch radius,
-// extruded symmetric about the mid-plane so it is centred on the bearing width) then circular-
-// patterns it roller_count times about the Z axis into the full roller complement.
-func (b *PartBuilder) patternRollers() error {
+// buildPlainRoller extrudes one plain cylindrical roller (a circle of roller_dia at the pitch
+// radius, extruded symmetric about the mid-plane so it is centred on the bearing width) — the
+// fallback buildRoller uses when rollerChamferFits is false. Returns the created feature's name so
+// the caller can pattern it.
+func (b *PartBuilder) buildPlainRoller() (string, error) {
 	sk, err := b.Sketch("XY")
 	if err != nil {
-		return err
+		return "", err
 	}
 	if err := sk.GroundedOffsetCircle("pitch_dia", "roller_dia"); err != nil {
-		return err
+		return "", err
 	}
 	if err := sk.AssertFullyConstrained(); err != nil {
-		return err
+		return "", err
 	}
-	roller, err := b.ExtrudeNamed(sk, "roller_length", "new", "symmetric")
+	return b.ExtrudeNamed(sk, "roller_length", "new", "symmetric")
+}
+
+// patternRollers builds one cylindrical roller (chamfered when rollerChamferFits, else plain) then
+// circular-patterns it roller_count times about the Z axis into the full roller complement. The
+// roller is built BEFORE the pattern so a future cage bar (#53 Task 3) can be added here, between
+// the build and the single whole-body PatternCircular call.
+func (b *PartBuilder) patternRollers(rm ResolvedMember) error {
+	roller, err := b.buildRoller(rm)
 	if err != nil {
 		return err
 	}
