@@ -15,12 +15,17 @@ type CategoryNode struct {
 }
 
 // Tree assembles the category tree from every family, mirroring Inventor's data-driven
-// category browser (the tree is derived from the families, not a hard-coded enum). Children
-// are sorted by name and each node's families by id, so the tree is deterministic.
+// category browser (the tree is derived from the families, not a hard-coded enum).
 func (c *Catalog) Tree() *CategoryNode {
+	return TreeOf(c.Families())
+}
+
+// TreeOf assembles a category tree from an explicit set of families (used to show a filtered
+// subtree, e.g. the browse tree under the Category/Standard/Search filters). Children are sorted
+// by name and families by id, so the tree is deterministic.
+func TreeOf(families []*Family) *CategoryNode {
 	root := &CategoryNode{}
-	for _, id := range c.order {
-		fam := c.families[id]
+	for _, fam := range families {
 		node := root.descend(fam.Category)
 		node.Families = append(node.Families, fam)
 	}
