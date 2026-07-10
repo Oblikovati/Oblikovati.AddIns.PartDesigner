@@ -21,9 +21,11 @@ const (
 // flanges (when flangesFit allows it, else a plain ring), and a circular pattern of cylindrical
 // rollers on the pitch circle — each roller revolved about its own centerline with 45° end
 // chamfers built into the meridian (when rollerChamferFits allows it, else a plain cylinder), axes
-// parallel to the bearing axis. Bore, outer diameter and width drive everything; the pitch/roller
-// diameters, roller length, race diameters and flange band are derived, so the bearing re-drives
-// with the size and roller_count drives the pattern. The cage is a tracked refinement (#53).
+// parallel to the bearing axis. A phased cage bridge bar (when rollerCageBarsFit allows it) is
+// built alongside the roller before the pattern, so the single pattern arrays both into every
+// inter-roller gap. Bore, outer diameter and width drive everything; the pitch/roller diameters,
+// roller length, race diameters and flange band are derived, so the bearing re-drives with the
+// size and roller_count drives the pattern.
 type RollerBearing struct{}
 
 // Kind is the family `generator` binding for cylindrical roller bearings.
@@ -67,7 +69,10 @@ func deriveRollerParams(b *PartBuilder) error {
 	if err := deriveFlangeParams(b); err != nil {
 		return err
 	}
-	return deriveRollerChamferParams(b)
+	if err := deriveRollerChamferParams(b); err != nil {
+		return err
+	}
+	return deriveRollerCageParams(b)
 }
 
 const rollerChamferFraction = "0.1" // 45deg chamfer leg as a fraction of roller_dia
@@ -177,14 +182,20 @@ func (b *PartBuilder) buildPlainRoller() (string, error) {
 	return b.ExtrudeNamed(sk, "roller_length", "new", "symmetric")
 }
 
-// patternRollers builds one cylindrical roller (chamfered when rollerChamferFits, else plain) then
-// circular-patterns it roller_count times about the Z axis into the full roller complement. The
-// roller is built BEFORE the pattern so a future cage bar (#53 Task 3) can be added here, between
-// the build and the single whole-body PatternCircular call.
+// patternRollers builds one cylindrical roller (chamfered when rollerChamferFits, else plain), then
+// one cage bridge bar at the half-pitch azimuth when rollerCageBarsFit allows it, then
+// circular-patterns roller (+bar) roller_count times about the Z axis into the full complement. The
+// bar is built BEFORE the pattern so the single whole-body PatternCircular call arrays both bodies
+// together — the bar, offset half a pitch from the roller, lands in every inter-roller gap.
 func (b *PartBuilder) patternRollers(rm ResolvedMember) error {
 	roller, err := b.buildRoller(rm)
 	if err != nil {
 		return err
+	}
+	if rollerCageBarsFit(rm) {
+		if err := b.buildRollerCageBar(); err != nil {
+			return err
+		}
 	}
 	return b.PatternCircular(roller, "roller_count")
 }
