@@ -100,3 +100,42 @@ func TestDefaultRegistryHasRollerBearing(t *testing.T) {
 		t.Fatalf("DefaultRegistry roller_bearing = (%v,%v), want the RollerBearing generator", g, ok)
 	}
 }
+
+// deriveFlangeParams publishes the flange axial band; flangesFit gates on positive land/overlap/band.
+func TestRollerFlangeParams(t *testing.T) {
+	h := &fakeHost{dof: 0}
+	if err := (RollerBearing{}).Build(newBuilder(h, catalog.UnitsMillimetre), rollerMember("NU206", 30, 62, 16, 13)); err != nil {
+		t.Fatalf("Build error = %v", err)
+	}
+	assertParam(t, h.added, "flange_axial_clr", "max(0.1, roller_length * 0.02)")
+	assertParam(t, h.added, "flange_inner_z", "roller_length / 2 + flange_axial_clr")
+	assertParam(t, h.added, "flange_bore_dia", "pitch_dia")
+}
+
+func TestRollerFlangedOuterRingRevolved(t *testing.T) {
+	h := &fakeHost{dof: 0}
+	if err := (RollerBearing{}).Build(newBuilder(h, catalog.UnitsMillimetre), rollerMember("NU206", 30, 62, 16, 13)); err != nil {
+		t.Fatalf("Build error = %v", err)
+	}
+	// inner ring + flanged outer ring = 2 revolves about Z, all 360deg/new.
+	if len(h.revolves) < 2 {
+		t.Fatalf("revolves = %d, want >=2 (inner + flanged outer)", len(h.revolves))
+	}
+	last := h.revolves[len(h.revolves)-1]
+	if last.AxisRef != "origin/axis/z" || last.Angle != "360 deg" || last.Operation != "new" {
+		t.Errorf("outer ring revolve = %+v, want z/360 deg/new", last)
+	}
+}
+
+func TestFlangesFitAcrossFamily(t *testing.T) {
+	members := [][4]float64{{15, 35, 11, 11}, {30, 62, 16, 13}, {50, 90, 20, 15}} // NU202, NU206, NU210
+	for _, m := range members {
+		if !flangesFit(rollerMember("x", m[0], m[1], m[2], m[3])) {
+			t.Errorf("flangesFit false for d=%v D=%v B=%v; every NU2xx must get flanges", m[0], m[1], m[2])
+		}
+	}
+	// Degenerate: a roller nearly as long as the ring leaves no overhang band → no flanges.
+	if flangesFit(rollerMember("x", 30, 62, 1.0, 13)) {
+		t.Error("flangesFit true for a member with no axial overhang; want plain-ring fallback")
+	}
+}
