@@ -116,15 +116,25 @@ func deriveBearingParams(b *PartBuilder) error {
 // shieldThickFraction caps a 2Z shield's axial thickness as a fraction of the bearing width.
 const shieldThickFraction = "0.12"
 
+// The 2Z shield's absolute clearances are UNIT-BEARING (mm). The parameter engine refuses to add a
+// bare unitless number to a length quantity, so "ball_dia / 2 + 0.2" silently evaluated to 0 and
+// collapsed both shields to zero volume (#53). Carrying "mm" makes each term a length. ISO-15
+// bearings are metric; a bare constant added to a length elsewhere must do the same.
+const (
+	shieldEquatorClr  = "0.2 mm" // near face held this far outboard of the ball equator
+	shieldEndClr      = "0.4 mm" // thickness kept this far off the ring end face
+	shieldRadialInset = "0.3 mm" // radial span held this far inside each raceway shoulder
+)
+
 // deriveShieldParams adds the 2Z shield band: near face just outboard of the ball equator, thickness
 // capped by the axial slack, and the radial span a hair inside the two raceway shoulders.
 func deriveShieldParams(b *PartBuilder) error {
 	dims := []struct{ name, expr string }{
-		{"shield_near_z", "ball_dia / 2 + 0.2"},
-		{"shield_thick", "min(width * " + shieldThickFraction + ", width / 2 - ball_dia / 2 - 0.4)"},
+		{"shield_near_z", "ball_dia / 2 + " + shieldEquatorClr},
+		{"shield_thick", "min(width * " + shieldThickFraction + ", width / 2 - ball_dia / 2 - " + shieldEndClr + ")"},
 		{"shield_far_z", "shield_near_z + shield_thick"},
-		{"shield_id", "inner_shoulder_dia + 0.3"},
-		{"shield_od", "outer_shoulder_dia - 0.3"},
+		{"shield_id", "inner_shoulder_dia + " + shieldRadialInset},
+		{"shield_od", "outer_shoulder_dia - " + shieldRadialInset},
 	}
 	for _, d := range dims {
 		if err := b.DeriveParam(d.name, d.expr); err != nil {

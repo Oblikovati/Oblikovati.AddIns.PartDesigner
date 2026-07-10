@@ -226,11 +226,13 @@ func TestBallShieldParams(t *testing.T) {
 	if err := (BallBearing{}).Build(newBuilder(h, catalog.UnitsMillimetre), bearingMember("6206", 30, 62, 16, 9)); err != nil {
 		t.Fatalf("Build error = %v", err)
 	}
-	assertParam(t, h.added, "shield_near_z", "ball_dia / 2 + 0.2")
-	assertParam(t, h.added, "shield_thick", "min(width * 0.12, width / 2 - ball_dia / 2 - 0.4)")
+	// The absolute clearances carry "mm" units: a bare unitless constant cannot be added to a
+	// length param, so their omission collapsed the shields to zero volume (#53).
+	assertParam(t, h.added, "shield_near_z", "ball_dia / 2 + 0.2 mm")
+	assertParam(t, h.added, "shield_thick", "min(width * 0.12, width / 2 - ball_dia / 2 - 0.4 mm)")
 	assertParam(t, h.added, "shield_far_z", "shield_near_z + shield_thick")
-	assertParam(t, h.added, "shield_id", "inner_shoulder_dia + 0.3")
-	assertParam(t, h.added, "shield_od", "outer_shoulder_dia - 0.3")
+	assertParam(t, h.added, "shield_id", "inner_shoulder_dia + 0.3 mm")
+	assertParam(t, h.added, "shield_od", "outer_shoulder_dia - 0.3 mm")
 }
 
 // TestBallShieldsRevolvedBothFaces checks the two shields (both faces) are revolved after the two

@@ -105,7 +105,9 @@ func TestRollerFlangeParams(t *testing.T) {
 	if err := (RollerBearing{}).Build(newBuilder(h, catalog.UnitsMillimetre), rollerMember("NU206", 30, 62, 16, 13)); err != nil {
 		t.Fatalf("Build error = %v", err)
 	}
-	assertParam(t, h.added, "flange_axial_clr", "max(0.1, roller_length * 0.02)")
+	// The clearance floor carries "mm" units: a bare unitless "0.1" cannot combine with the length
+	// roller_length in max(), which collapsed flange_inner_z to 0 and filled the ⊐ channel (#53).
+	assertParam(t, h.added, "flange_axial_clr", "max(0.1 mm, roller_length * 0.02)")
 	assertParam(t, h.added, "flange_inner_z", "roller_length / 2 + flange_axial_clr")
 	assertParam(t, h.added, "flange_bore_dia", "pitch_dia")
 }

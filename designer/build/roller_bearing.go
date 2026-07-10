@@ -113,14 +113,20 @@ func (b *PartBuilder) buildRoller(rm ResolvedMember) (string, error) {
 }
 
 // Flange proportions: the axial clearance from a roller end to the flange inner face, as an
-// absolute floor or a fraction of the roller length — whichever is larger.
-const flangeAxialClrFraction = "0.02"
+// absolute floor or a fraction of the roller length — whichever is larger. The floor is
+// UNIT-BEARING (mm): a bare "0.1" is unitless, and max()/+ reject mixing it with the length
+// roller_length, which silently evaluated flange_inner_z to 0 and filled the ⊐ raceway relief into
+// a solid block (#53). Carrying "mm" keeps both max() operands lengths.
+const (
+	flangeAxialClrFraction = "0.02"
+	flangeAxialClrFloor    = "0.1 mm"
+)
 
 // deriveFlangeParams adds the outer-ring guide-flange band: the roller-end→flange clearance, the
 // flange inner-face |z|, and the flange bore diameter (pitch_dia = mid roller-end annulus, so the
 // rib dips roller_dia/2 below the roller crest yet keeps a land above the plain inner ring).
 func deriveFlangeParams(b *PartBuilder) error {
-	if err := b.DeriveParam("flange_axial_clr", "max(0.1, roller_length * "+flangeAxialClrFraction+")"); err != nil {
+	if err := b.DeriveParam("flange_axial_clr", "max("+flangeAxialClrFloor+", roller_length * "+flangeAxialClrFraction+")"); err != nil {
 		return err
 	}
 	if err := b.DeriveParam("flange_inner_z", "roller_length / 2 + flange_axial_clr"); err != nil {
