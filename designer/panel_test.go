@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	"oblikovati.org/api/types"
 	"oblikovati.org/api/wire"
 	"oblikovati.org/part-designer/designer/catalog"
 )
@@ -20,9 +21,11 @@ func controlByID(controls []wire.PanelControlSpec, id string) (wire.PanelControl
 	return wire.PanelControlSpec{}, false
 }
 
-// TestPanelShowsCascadingBrowser checks the panel renders the Category/Standard/Part/Size
-// dropdowns (fed by the catalogue) plus a Place button wired to the Place command.
-func TestPanelShowsCascadingBrowser(t *testing.T) {
+// TestPanelShowsBrowseSurface checks the panel renders the Category/Standard/Search filters
+// (fed by the catalogue) plus the catalog tree + members table, and a Place button wired to the
+// Place command. Supersedes the old dropdown-based TestPanelShowsCascadingBrowser (issue #48):
+// the Part/Size dropdowns are gone, replaced by a PanelTree over a PanelTable.
+func TestPanelShowsBrowseSurface(t *testing.T) {
 	host := newFakeHost()
 	e := NewEngine(host)
 	if _, err := e.ShowPanel(); err != nil {
@@ -34,18 +37,18 @@ func TestPanelShowsCascadingBrowser(t *testing.T) {
 	if !ok || !contains(std.Options, "ISO") || !contains(std.Options, "DIN") {
 		t.Errorf("standard options = %v, want All + ISO + DIN", std.Options)
 	}
-	fam, ok := controlByID(controls, familyControlID)
-	if !ok || !contains(fam.Options, "ISO 4017 Hex Head") || !contains(fam.Options, "DIN 934 Hex") {
-		t.Errorf("family options = %v, want both seed families' labels", fam.Options)
+	tree, ok := controlByID(controls, catalogControlID)
+	if !ok || len(tree.Nodes) == 0 {
+		t.Fatal("catalog tree control missing or empty")
 	}
 	// A default family + first size are always selected (the first family id-sorted, whichever
 	// it is) so the panel opens ready to place.
-	if fam.Value == "" || !contains(fam.Options, fam.Value) {
-		t.Errorf("default family = %q, want one of the family options %v", fam.Value, fam.Options)
+	if tree.Value == "" {
+		t.Errorf("default tree selection = %q, want a family ID", tree.Value)
 	}
-	size, _ := controlByID(controls, sizeControlID)
-	if size.Value == "" || len(size.Options) == 0 {
-		t.Errorf("size dropdown empty; value=%q options=%v", size.Value, size.Options)
+	table, ok := controlByID(controls, membersControlID)
+	if !ok || len(table.TableRows) == 0 || table.Value == "" {
+		t.Errorf("members table empty or unselected: rows=%d value=%q", len(table.TableRows), table.Value)
 	}
 	place, ok := controlByID(controls, "place")
 	if !ok || place.CommandID != PlaceCommandID {
@@ -54,71 +57,96 @@ func TestPanelShowsCascadingBrowser(t *testing.T) {
 }
 
 // TestWasherTextSizeColumn checks a family keyed on a text "size" column renders its sizes as
-// nominal designations (M6..M12) rather than numeric labels — selecting it explicitly so the
-// check does not depend on which family sorts first as the default.
+// nominal designations (M6..M12) in the members table rather than numeric labels — selecting it
+// explicitly (via the catalog tree control) so the check does not depend on which family sorts
+// first as the default.
 func TestWasherTextSizeColumn(t *testing.T) {
 	e := NewEngine(newFakeHost())
-	e.applySelection(familyControlID, "DIN 125 Plain")
+	e.applySelection(catalogControlID, "din125-washer")
 	if e.sel.familyID != "din125-washer" {
 		t.Fatalf("selected family = %q, want din125-washer", e.sel.familyID)
 	}
-	fam, _ := e.family(e.sel.familyID)
-	sizes := sizeOptions(fam)
-	if sizeLabelOf(fam, e.sel.memberKey) != "M6" || !contains(sizes, "M12") {
-		t.Errorf("washer sizes = %q %v, want nominal M6..M12 labels", sizeLabelOf(fam, e.sel.memberKey), sizes)
+	fam := mustFamily(t, e)
+	rows := tableRows(fam)
+	if len(rows) == 0 || rows[0].Cells[0] != "M6" {
+		t.Errorf("first washer row = %+v, want size cell M6", rows)
+	}
+	if !anyRowCellEquals(rows, "M12") {
+		t.Errorf("washer table rows = %+v, want a M12 row", rows)
 	}
 }
 
-// TestSelectionCascade checks that a standard filter narrows the Part list, choosing a family
-// switches the sizes, and choosing a size updates the member.
+// anyRowCellEquals reports whether any row has a cell equal to want.
+func anyRowCellEquals(rows []wire.TableRow, want string) bool {
+	for _, r := range rows {
+		if contains(r.Cells, want) {
+			return true
+		}
+	}
+	return false
+}
+
+// familyIDs extracts family ids for readable assertions.
+func familyIDs(fams []*catalog.Family) []string {
+	out := make([]string, len(fams))
+	for i, f := range fams {
+		out[i] = f.ID
+	}
+	return out
+}
+
+// TestSelectionCascade checks that a standard filter narrows the filtered family set, choosing a
+// family (via the catalog tree control) switches the members table, and choosing a member (via
+// the members table control) updates the selected member.
 func TestSelectionCascade(t *testing.T) {
 	e := NewEngine(newFakeHost())
 
-	e.applySelection(standardControlID, "ISO") // narrows the Part list to ISO families
+	e.applySelection(standardControlID, "ISO") // narrows the browse tree to ISO families
 	if e.sel.standard != "ISO" {
 		t.Fatalf("standard = %q, want ISO", e.sel.standard)
 	}
-	if !contains(e.familyOptions(e.sel), "ISO 4017 Hex Head") {
-		t.Errorf("ISO family options = %v, want to include the hex bolt", e.familyOptions(e.sel))
+	if !contains(familyIDs(e.filteredFamilies(e.sel)), "iso4017-hex-bolt") {
+		t.Errorf("ISO filtered families = %v, want to include the hex bolt", familyIDs(e.filteredFamilies(e.sel)))
 	}
 
-	e.applySelection(familyControlID, "ISO 4017 Hex Head")
-	e.applySelection(sizeControlID, "12x60") // ISO 4017 M12x60
+	e.applySelection(catalogControlID, "iso4017-hex-bolt")
+	e.applySelection(membersControlID, "d=12,l=60") // ISO 4017 M12x60
 	if e.sel.familyID != "iso4017-hex-bolt" || e.sel.memberKey != "d=12,l=60" {
 		t.Errorf("selection = %q/%q, want iso4017-hex-bolt / d=12,l=60", e.sel.familyID, e.sel.memberKey)
 	}
 
 	// Clearing the standard filter restores every family.
 	e.applySelection(standardControlID, allOption)
-	if got := len(e.familyOptions(e.sel)); got != e.catalog.Len() {
-		t.Errorf("family options after clearing filter = %d, want all %d", got, e.catalog.Len())
+	if got := len(e.filteredFamilies(e.sel)); got != e.catalog.Len() {
+		t.Errorf("filtered families after clearing filter = %d, want all %d", got, e.catalog.Len())
 	}
 }
 
-// TestSearchNarrowsAndSelects is the F1 acceptance check: typing a search query narrows the Part
-// list to matching families and re-picks a valid family, and clearing the search restores all.
+// TestSearchNarrowsAndSelects is the F1 acceptance check: typing a search query narrows the
+// filtered family set to matching families and re-picks a valid family, and clearing the search
+// restores all.
 func TestSearchNarrowsAndSelects(t *testing.T) {
 	e := NewEngine(newFakeHost())
 
-	// Searching a bearing designation narrows the Part list to that family and selects it.
+	// Searching a bearing designation narrows the filtered families to that family and selects it.
 	e.applySelection(searchControlID, "6205")
-	opts := e.familyOptions(e.sel)
-	if len(opts) != 1 || !contains(opts, "ISO 15 Deep Groove") {
-		t.Fatalf("search 6205 family options = %v, want just the ISO 15 ball bearing", opts)
+	fams := e.filteredFamilies(e.sel)
+	if len(fams) != 1 || fams[0].ID != "iso15-deep-groove-ball-bearing" {
+		t.Fatalf("search 6205 filtered families = %v, want just the ISO 15 ball bearing", familyIDs(fams))
 	}
 	if e.sel.familyID != "iso15-deep-groove-ball-bearing" {
 		t.Errorf("family after search = %q, want the ball bearing", e.sel.familyID)
 	}
 
-	// The searched size is offered in the now-selected family's Size dropdown.
-	if !contains(sizeOptions(mustFamily(t, e)), "6205") {
-		t.Errorf("size options after 6205 search = %v, want to include 6205", sizeOptions(mustFamily(t, e)))
+	// The searched size is offered in the now-selected family's members table.
+	if !anyRowCellEquals(tableRows(mustFamily(t, e)), "6205") {
+		t.Errorf("table rows after 6205 search = %+v, want a 6205 row", tableRows(mustFamily(t, e)))
 	}
 
 	// Clearing the search restores every family.
 	e.applySelection(searchControlID, "")
-	if got := len(e.familyOptions(e.sel)); got != e.catalog.Len() {
-		t.Errorf("family options after clearing search = %d, want all %d", got, e.catalog.Len())
+	if got := len(e.filteredFamilies(e.sel)); got != e.catalog.Len() {
+		t.Errorf("filtered families after clearing search = %d, want all %d", got, e.catalog.Len())
 	}
 }
 
@@ -132,7 +160,8 @@ func mustFamily(t *testing.T, e *Engine) *catalog.Family {
 	return fam
 }
 
-// TestSelectFamilyAndCategory covers picking a family by its label and filtering by category.
+// TestSelectFamilyAndCategory covers picking a family by ID (via the catalog tree control) and
+// filtering by category.
 func TestSelectFamilyAndCategory(t *testing.T) {
 	e := NewEngine(newFakeHost())
 
@@ -140,14 +169,14 @@ func TestSelectFamilyAndCategory(t *testing.T) {
 	// 3 socket screws, 3 hex nuts, 3 washers, 2 studs) plus 4 ANSI inch (hex bolt, hex nut,
 	// washer, socket-head cap screw).
 	e.applySelection(categoryControlID, "Fasteners")
-	if e.sel.category != "Fasteners" || len(e.familyOptions(e.sel)) != 17 {
-		t.Fatalf("category=Fasteners: cat=%q families=%v", e.sel.category, e.familyOptions(e.sel))
+	if e.sel.category != "Fasteners" || len(e.filteredFamilies(e.sel)) != 17 {
+		t.Fatalf("category=Fasteners: cat=%q families=%v", e.sel.category, familyIDs(e.filteredFamilies(e.sel)))
 	}
 
-	// Choosing a family by its label switches to it and re-picks its first size.
-	e.applySelection(familyControlID, "ISO 4017 Hex Head")
+	// Choosing a family by ID (a tree-node click) switches to it and re-picks its first size.
+	e.applySelection(catalogControlID, "iso4017-hex-bolt")
 	if e.sel.familyID != "iso4017-hex-bolt" {
-		t.Errorf("family after label select = %q, want iso4017-hex-bolt", e.sel.familyID)
+		t.Errorf("family after tree select = %q, want iso4017-hex-bolt", e.sel.familyID)
 	}
 	if e.sel.memberKey != "d=6,l=30" {
 		t.Errorf("member after family switch = %q, want the first size d=6,l=30", e.sel.memberKey)
@@ -165,7 +194,7 @@ func TestSelectFamilyAndCategory(t *testing.T) {
 func TestPlaceSelection(t *testing.T) {
 	host := newFakeHost()
 	e, _ := engineWith(t, host, "hex_bolt")
-	e.applySelection(familyControlID, "ISO 4017 Hex Head") // pick the hex bolt + its first size
+	e.applySelection(catalogControlID, "iso4017-hex-bolt") // pick the hex bolt + its first size
 
 	e.placeSelection()
 
@@ -186,7 +215,7 @@ func TestPlaceSelection(t *testing.T) {
 func TestPlaceSelectionReportsGeneratorGap(t *testing.T) {
 	host := newFakeHost()
 	e, _ := engineWith(t, host, "hex_bolt") // hex_nut deliberately NOT registered
-	e.applySelection(familyControlID, "DIN 934 Hex")
+	e.applySelection(catalogControlID, "din934-hex-nut")
 	e.placeSelection()
 	if !strings.Contains(host.status, "not registered") {
 		t.Errorf("status = %q, want a generator-not-registered message", host.status)
@@ -209,4 +238,21 @@ func contains(xs []string, s string) bool {
 		}
 	}
 	return false
+}
+
+// browserControls must expose a PanelTree and a PanelTable (the browse surface) plus the Place
+// button, and keep the Category/Standard/Search filters. The old Part/Size dropdowns are gone.
+func TestBrowserControlsHasTreeAndTable(t *testing.T) {
+	e, _ := engineWith(t, newFakeHost())
+	controls := e.browserControls(e.defaultSelection())
+	kinds := map[types.PanelControlKind]int{}
+	for _, c := range controls {
+		kinds[c.Kind]++
+	}
+	if kinds[types.PanelTree] != 1 || kinds[types.PanelTable] != 1 {
+		t.Fatalf("want exactly one tree and one table, got tree=%d table=%d", kinds[types.PanelTree], kinds[types.PanelTable])
+	}
+	if kinds[types.PanelDropdown] < 2 { // Category + Standard filters remain
+		t.Fatalf("want the Category/Standard filter dropdowns retained, got %d dropdowns", kinds[types.PanelDropdown])
+	}
 }

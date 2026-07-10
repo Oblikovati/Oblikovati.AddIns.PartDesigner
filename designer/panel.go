@@ -8,28 +8,24 @@ import (
 	"oblikovati.org/api/client"
 	"oblikovati.org/api/types"
 	"oblikovati.org/api/wire"
-	"oblikovati.org/part-designer/designer/catalog"
 )
 
 // PanelID is the stable dockable-window id the add-in owns.
 const PanelID = "com.oblikovati.part-designer.panel"
 
-// Panel control ids. Dropdown edits arrive as panel.valueChanged for these; the Place button
-// carries the PartDesigner.Place command, so it arrives as command.started instead.
+// Panel control ids. Dropdown/tree/table edits arrive as panel.valueChanged for these; the
+// Place button carries the PartDesigner.Place command, so it arrives as command.started instead.
 const (
 	categoryControlID = "category"
 	standardControlID = "standard"
 	searchControlID   = "search"
-	familyControlID   = "family"
-	sizeControlID     = "size"
 	catalogControlID  = "catalog" // PanelTree of category→family
 	membersControlID  = "members" // PanelTable of the selected family's members
 )
 
 // ShowPanel creates (or replaces) the Part Designer dockable window, following Inventor's
-// "Place from Content Center" flow with the host's current control vocabulary: cascading
-// Category → Standard → Part → Size dropdowns plus a Place button. A richer tree+table
-// browse dialog is deferred to a follow-up API extension.
+// "Place from Content Center" flow: Category/Standard/Search filters over a category TREE
+// (leaves are families) and a member parameter TABLE, plus a Place button (issue #48).
 func (e *Engine) ShowPanel() (wire.OKResult, error) {
 	return e.api.DockableWindows().Set(wire.DockableWindowSpec{
 		ID:       PanelID,
@@ -52,7 +48,9 @@ func (e *Engine) panelControls() []wire.PanelControlSpec {
 	return e.browserControls(sel)
 }
 
-// browserControls builds the cascading dropdowns + Place button for a selection.
+// browserControls builds the browse surface: the three filters, then a category TREE (leaves are
+// families) over a member parameter TABLE, then Place. The tree/table replace the old cascading
+// Part/Size dropdowns (issue #48). The catalogue is immutable, so it is read lock-free here.
 func (e *Engine) browserControls(sel panelState) []wire.PanelControlSpec {
 	fam, _ := e.family(sel.familyID)
 	return []wire.PanelControlSpec{
@@ -60,11 +58,17 @@ func (e *Engine) browserControls(sel panelState) []wire.PanelControlSpec {
 		client.PanelDropdown(categoryControlID, "Category", e.categoryOptions(), orAll(sel.category)),
 		client.PanelDropdown(standardControlID, "Standard", e.standardOptions(), orAll(sel.standard)),
 		client.PanelTextBox(searchControlID, "Search", sel.search),
-		client.PanelDropdown(familyControlID, "Part", e.familyOptions(sel), labelOf(fam)),
-		client.PanelDropdown(sizeControlID, "Size", sizeOptions(fam), sizeLabelOf(fam, sel.memberKey)),
+		client.PanelTree(catalogControlID, e.treeNodes(sel), sel.familyID),
+		client.PanelTable(membersControlID, tableColumns(fam), tableRows(fam), sel.memberKey),
 		{Kind: types.PanelSeparator},
 		client.PanelButton("place", "Place", PlaceCommandID),
 	}
+}
+
+// treeNodes builds the family tree filtered by the current Category/Standard/Search selection so
+// the tree honours the filters above it. It re-runs the catalog tree over the filtered families.
+func (e *Engine) treeNodes(sel panelState) []wire.TreeNode {
+	return familyTreeNodes(e.filteredTree(sel))
 }
 
 // catalogErrorControls is shown when the embedded catalogue failed to load (a build-time
@@ -97,46 +101,6 @@ func (e *Engine) categoryOptions() []string {
 // standardOptions lists "All" plus the catalogue's standards bodies.
 func (e *Engine) standardOptions() []string {
 	return append([]string{allOption}, e.catalog.Standards()...)
-}
-
-// familyOptions lists the labels of the families matching the current filters.
-func (e *Engine) familyOptions(sel panelState) []string {
-	var opts []string
-	for _, f := range e.filteredFamilies(sel) {
-		opts = append(opts, familyLabel(f))
-	}
-	return opts
-}
-
-// sizeOptions lists the size labels of a family's members.
-func sizeOptions(fam *catalog.Family) []string {
-	if fam == nil {
-		return nil
-	}
-	opts := make([]string, 0, len(fam.Members))
-	for _, m := range fam.Members {
-		opts = append(opts, sizeLabel(fam, m))
-	}
-	return opts
-}
-
-// labelOf is a family's dropdown label, or "" for none.
-func labelOf(fam *catalog.Family) string {
-	if fam == nil {
-		return ""
-	}
-	return familyLabel(fam)
-}
-
-// sizeLabelOf is the size label of a family member by key, or "" when absent.
-func sizeLabelOf(fam *catalog.Family, memberKey string) string {
-	if fam == nil {
-		return ""
-	}
-	if m, ok := fam.Member(memberKey); ok {
-		return sizeLabel(fam, m)
-	}
-	return ""
 }
 
 // orAll renders an empty filter as the "All" sentinel for the dropdown's current value.

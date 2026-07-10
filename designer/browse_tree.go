@@ -32,3 +32,9 @@ func childNodes(node *catalog.CategoryNode, depth int) []wire.TreeNode {
 	}
 	return out
 }
+
+// filteredTree returns a category tree containing only the families that pass the current filters,
+// so the browse tree shows the same set the old Part dropdown did.
+func (e *Engine) filteredTree(sel panelState) *catalog.CategoryNode {
+	return catalog.TreeOf(e.filteredFamilies(sel))
+}

@@ -8,9 +8,9 @@ import (
 	"oblikovati.org/part-designer/designer/catalog"
 )
 
-// panelState is the panel's current cascading selection: three filters (a top-level category, a
-// standards body — empty = "All" — and a free-text search) narrow the Part list, and a chosen
-// family + member (size) identify what Place builds.
+// panelState is the panel's current browse selection: three filters (a top-level category, a
+// standards body — empty = "All" — and a free-text search) narrow the category tree/members
+// table, and a chosen family + member (size) identify what Place builds.
 type panelState struct {
 	category  string // top-level category segment; "" = all
 	standard  string // standards body (ISO/DIN/ANSI); "" = all
@@ -22,9 +22,9 @@ type panelState struct {
 // allOption is the dropdown entry that clears a filter.
 const allOption = "All"
 
-// applySelection updates the selection for one dropdown edit, then reconciles so the
-// downstream choices stay valid (changing a filter re-picks the family; changing the family
-// re-picks the size). The caller holds the engine mutex.
+// applySelection updates the selection for one control edit (filter dropdown, tree-node click,
+// or table-row click), then reconciles so the downstream choices stay valid (changing a filter
+// re-picks the family; changing the family re-picks the size). The caller holds the engine mutex.
 func (e *Engine) applySelection(controlID, value string) {
 	switch controlID {
 	case categoryControlID:
@@ -92,16 +92,6 @@ func (e *Engine) family(id string) (*catalog.Family, bool) {
 	return e.catalog.Family(id)
 }
 
-// familyByLabel finds a filtered family by its display label.
-func (e *Engine) familyByLabel(sel panelState, label string) *catalog.Family {
-	for _, f := range e.filteredFamilies(sel) {
-		if familyLabel(f) == label {
-			return f
-		}
-	}
-	return nil
-}
-
 // pickFamily returns the family with id, else the first family, else nil.
 func pickFamily(fams []*catalog.Family, id string) *catalog.Family {
 	for _, f := range fams {
@@ -126,16 +116,6 @@ func pickMember(fam *catalog.Family, key string) string {
 		return fam.Members[0].Key
 	}
 	return ""
-}
-
-// memberByLabel finds a member of fam by its size label.
-func memberByLabel(fam *catalog.Family, label string) (catalog.Member, bool) {
-	for _, m := range fam.Members {
-		if sizeLabel(fam, m) == label {
-			return m, true
-		}
-	}
-	return catalog.Member{}, false
 }
 
 // familyLabel is a family's human name in the Part dropdown: standard + leaf category (e.g.

@@ -2,7 +2,12 @@
 
 package designer
 
-import "testing"
+import (
+	"encoding/json"
+	"testing"
+
+	"oblikovati.org/api/wire"
+)
 
 // TestBindActiveStampedPart is the F2 acceptance check: activating a placed part binds the panel
 // to it — the selection switches to the part's stamped family + size and the panel enters
@@ -24,8 +29,8 @@ func TestBindActiveStampedPart(t *testing.T) {
 	if e.sel.familyID != "iso4017-hex-bolt" || e.sel.memberKey != "d=12,l=60" {
 		t.Errorf("bound selection = %q/%q, want the placed hex bolt d=12,l=60", e.sel.familyID, e.sel.memberKey)
 	}
-	if sizeLabelOf(mustFamily(t, e), e.sel.memberKey) != "12x60" {
-		t.Errorf("shown size = %q, want 12x60", sizeLabelOf(mustFamily(t, e), e.sel.memberKey))
+	if got := boundSizeLabel(t, e); got != "12x60" {
+		t.Errorf("shown size = %q, want 12x60", got)
 	}
 }
 
@@ -90,8 +95,8 @@ func TestBoundSizeChangeRedrives(t *testing.T) {
 	docsBefore := len(h.docs)
 	e.bindActiveDocument()
 
-	// Emulate the bound Size-dropdown edit: apply the selection, then re-drive because bound.
-	e.applySelection(sizeControlID, "12x60")
+	// Emulate a bound members-table row click: apply the selection, then re-drive because bound.
+	e.applySelection(membersControlID, "d=12,l=60")
 	if err := e.ChangeSize(e.sel.memberKey); err != nil {
 		t.Fatalf("ChangeSize error = %v", err)
 	}
@@ -105,4 +110,45 @@ func TestBoundSizeChangeRedrives(t *testing.T) {
 	if h.updates == 0 {
 		t.Error("document was not recomputed after the bound size change")
 	}
+}
+
+// TestBoundMembersRowRedrivesViaNotify is the live-wiring regression check for the tree/table
+// swap (issue #48): a real panel.valueChanged event on the members TABLE control (not the
+// removed Size dropdown) must still re-drive a bound document in place. handlePanelEdit keys its
+// resize decision off membersControlID now, so this exercises that through the same Notify path
+// the host uses (not the direct ChangeSize call TestBoundSizeChangeRedrives makes).
+func TestBoundMembersRowRedrivesViaNotify(t *testing.T) {
+	h := newFakeHost()
+	e, _ := engineWith(t, h, "hex_bolt")
+	if _, err := e.Place("iso4017-hex-bolt", "d=8,l=40"); err != nil {
+		t.Fatalf("Place error = %v", err)
+	}
+	docsBefore := len(h.docs)
+	e.bindActiveDocument()
+
+	ev, err := json.Marshal(wire.PanelValueChangedEvent{
+		Type: wire.EventPanelValueChanged, WindowId: PanelID,
+		ControlId: membersControlID, Value: "d=12,l=60",
+	})
+	if err != nil {
+		t.Fatalf("marshal event: %v", err)
+	}
+	e.Notify(ev)
+
+	waitFor(t, func() bool { return hasParam(h.set, "length", "60 mm") },
+		"members-table Notify event never re-drove the bound document")
+	if len(h.docs) != docsBefore {
+		t.Errorf("documents = %d, want %d (Change-Size must not create a new document)", len(h.docs), docsBefore)
+	}
+}
+
+// boundSizeLabel is the display size label of the engine's currently-selected member.
+func boundSizeLabel(t *testing.T, e *Engine) string {
+	t.Helper()
+	fam := mustFamily(t, e)
+	m, ok := fam.Member(e.sel.memberKey)
+	if !ok {
+		t.Fatalf("no member %q in family %q", e.sel.memberKey, fam.ID)
+	}
+	return sizeLabel(fam, m)
 }
