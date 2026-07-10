@@ -5,6 +5,7 @@ package build
 import (
 	"testing"
 
+	"oblikovati.org/api/wire"
 	"oblikovati.org/part-designer/designer/catalog"
 )
 
@@ -77,6 +78,33 @@ func TestRollerCageFallbackSkipsBar(t *testing.T) {
 	for _, rv := range h.revolves {
 		if rv.Angle == "bar_half_angle" {
 			t.Errorf("found bar_half_angle revolve %+v; want no cage bar in the fallback path", rv)
+		}
+	}
+}
+
+// TestRollerCageBarErrorsPropagate walks buildRollerCageBar's own build beyond its
+// AngledOrientedSketch call (its workPlanes.create failure is already reached by
+// TestRollerBearingBuildErrorsPropagate's sweep): the ring section and its constraint check. The
+// roller itself has already revolved by this point (buildRoller runs first in patternRollers),
+// but the bar and the roller_count pattern have not, so revolves must be exactly 1 and the
+// pattern empty in both cases.
+func TestRollerCageBarErrorsPropagate(t *testing.T) {
+	cases := []struct {
+		name      string
+		method    string
+		failAfter int
+	}{
+		{"GroundedRingSection", wire.MethodSketchAddEntity, 3},
+		{"AssertFullyConstrained", wire.MethodSketchConstraintStatus, 1},
+	}
+	for _, c := range cases {
+		h, err := buildRollerWithFailure(t, c.method, c.failAfter)
+		if err == nil {
+			t.Errorf("%s: Build succeeded, want an error", c.name)
+		}
+		if len(h.revolves) != 1 || len(h.patterns) != 0 {
+			t.Errorf("%s: revolves=%d patterns=%d, want 1/0 (roller done, bar+pattern not)",
+				c.name, len(h.revolves), len(h.patterns))
 		}
 	}
 }

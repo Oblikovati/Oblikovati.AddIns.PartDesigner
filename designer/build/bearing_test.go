@@ -117,6 +117,76 @@ func TestBallBearingBuildErrorsPropagate(t *testing.T) {
 	}
 }
 
+// buildBallWithFailure runs BallBearing.Build for the 6205 (shieldsFit) member with method
+// returning an error starting on its (failAfter+1)th call — the first failAfter matching calls
+// succeed normally. See buildRollerWithFailure (roller_bearing_test.go) for the same idiom on the
+// sibling generator.
+func buildBallWithFailure(t *testing.T, method string, failAfter int) (*fakeHost, error) {
+	t.Helper()
+	h := &fakeHost{dof: 0, failMethod: method, failAfter: failAfter}
+	rm := bearingMember("6205", 25, 52, 15, 9)
+	err := (BallBearing{}).Build(newBuilder(h, catalog.UnitsMillimetre), rm)
+	return h, err
+}
+
+// TestBallBearingDeriveParamsErrorsPropagate walks deriveBearingParams' own derivation chain —
+// pitch diameter, ball diameter, groove radius, the two raceway shoulders — and on into
+// deriveShieldParams' band (#53), by letting parameters.list succeed failAfter times before
+// failing the next one: unlike TestBallBearingBuildErrorsPropagate (which always trips the very
+// first parameters.list call, inside PublishParams), this reaches each derive step's OWN
+// "if err != nil" guard, one at a time, including deriveShieldParams' (the #53-touched function).
+// No geometry is built until every derive succeeds, so every case must leave the bearing with
+// zero revolves and no ball pattern.
+func TestBallBearingDeriveParamsErrorsPropagate(t *testing.T) {
+	cases := []struct {
+		name      string
+		failAfter int
+	}{
+		{"pitch_dia (derivePitchDia)", 1},
+		{"ball_dia", 2},
+		{"groove_radius", 3},
+		{"inner_shoulder_dia", 4},
+		{"outer_shoulder_dia", 5},
+		{"shield_near_z (deriveShieldParams)", 6},
+	}
+	for _, c := range cases {
+		h, err := buildBallWithFailure(t, wire.MethodParametersList, c.failAfter)
+		if err == nil {
+			t.Errorf("%s: Build succeeded, want an error", c.name)
+		}
+		if len(h.revolves) != 0 || len(h.patterns) != 0 {
+			t.Errorf("%s: made geometry despite a derive failure: revolves=%d patterns=%d",
+				c.name, len(h.revolves), len(h.patterns))
+		}
+	}
+}
+
+// TestBallShieldStageErrorsPropagate targets revolveOneShield's own build (#53): its Sketch call,
+// GroundedShieldSection (section_shield.go) and AssertFullyConstrained. Each case lets the ball
+// complement and both grooved rings — the geometry that runs before revolveShields — through
+// first, so revolves must stop at exactly 3 (ball + two grooved rings; no shield completed) in
+// every case.
+func TestBallShieldStageErrorsPropagate(t *testing.T) {
+	cases := []struct {
+		name      string
+		method    string
+		failAfter int
+	}{
+		{"revolveOneShield +Z: Sketch", wire.MethodSketchCreate, 3},
+		{"GroundedShieldSection: AddRectangle", wire.MethodSketchAddEntity, 17},
+		{"revolveOneShield: AssertFullyConstrained", wire.MethodSketchConstraintStatus, 3},
+	}
+	for _, c := range cases {
+		h, err := buildBallWithFailure(t, c.method, c.failAfter)
+		if err == nil {
+			t.Errorf("%s: Build succeeded, want an error", c.name)
+		}
+		if len(h.revolves) != 3 {
+			t.Errorf("%s: revolves = %d, want 3 (ball + two grooved rings; no shield completed)", c.name, len(h.revolves))
+		}
+	}
+}
+
 // TestBallBearingGrooveFitsRaceway guards the ground-race-groove geometry against a vanishing
 // shoulder land: with groove_radius = 0.52·ball_dia and ball_dia = 0.28·gap, the groove's axial
 // half-span z_s = groove_radius·sqrt(1−0.55²) ≈ 0.835·groove_radius must stay inside width/2, or the

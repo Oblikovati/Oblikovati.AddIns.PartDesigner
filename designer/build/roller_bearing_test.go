@@ -5,6 +5,7 @@ package build
 import (
 	"testing"
 
+	"oblikovati.org/api/wire"
 	"oblikovati.org/part-designer/designer/catalog"
 )
 
@@ -218,5 +219,195 @@ func TestFlangeFallbackUsesPlainOuterRing(t *testing.T) {
 	}
 	if polylines != 1 {
 		t.Errorf("polyline entities = %d, want 1 (only the chamfered-roller section)", polylines)
+	}
+}
+
+// TestPlainRollerErrorsPropagate targets buildPlainRoller's own three guards — the fallback
+// buildRoller takes when rollerChamferFits is false (roller_bearing.go). Uses the same
+// degenerate-chamfer fixture as TestRollerChamferFallbackExtrudesPlainRoller (D-d=4mm ⇒ leg below
+// the visibility floor), so buildPlainRoller — not the chamfered-roller section — is the first
+// geometry Build attempts; failAfter=0 on each method reaches its own first call in the whole
+// Build, since nothing runs before the roller.
+func TestPlainRollerErrorsPropagate(t *testing.T) {
+	rm := rollerMember("x", 30, 34, 16, 13) // D-d=4mm -> roller_dia 1.12mm -> leg 0.112mm < 0.15mm floor
+	if rollerChamferFits(rm) {
+		t.Fatal("test fixture unexpectedly passes rollerChamferFits; no longer degenerate")
+	}
+	cases := []struct {
+		name   string
+		method string
+	}{
+		{"Sketch", wire.MethodSketchCreate},
+		{"GroundedOffsetCircle", wire.MethodSketchAddEntity},
+		{"AssertFullyConstrained", wire.MethodSketchConstraintStatus},
+	}
+	for _, c := range cases {
+		h := &fakeHost{dof: 0, failMethod: c.method}
+		err := (RollerBearing{}).Build(newBuilder(h, catalog.UnitsMillimetre), rm)
+		if err == nil {
+			t.Errorf("%s: Build succeeded, want an error", c.name)
+		}
+		if len(h.extrudes) != 0 || len(h.revolves) != 0 || len(h.patterns) != 0 {
+			t.Errorf("%s: made geometry despite a plain-roller failure: extrudes=%d revolves=%d patterns=%d",
+				c.name, len(h.extrudes), len(h.revolves), len(h.patterns))
+		}
+	}
+}
+
+// buildRollerWithFailure runs RollerBearing.Build for a member with flanges, a chamfered roller
+// and a cage bar all fitting (NU206), with method returning an error starting on its
+// (failAfter+1)th call — the first failAfter matching calls succeed normally. That is how the
+// tests below reach a LATER wire call inside a multi-call derivation or section instead of always
+// tripping the very first one (fakeHost's plain failMethod, used with the default failAfter of 0,
+// already covers every FIRST occurrence — see TestRollerBearingBuildErrorsPropagate).
+func buildRollerWithFailure(t *testing.T, method string, failAfter int) (*fakeHost, error) {
+	t.Helper()
+	h := &fakeHost{dof: 0, failMethod: method, failAfter: failAfter}
+	rm := rollerMember("NU206", 30, 62, 16, 13)
+	err := (RollerBearing{}).Build(newBuilder(h, catalog.UnitsMillimetre), rm)
+	return h, err
+}
+
+// TestRollerBearingBuildErrorsPropagate injects a host failure at each wire method the #53
+// roller-bearing build uses, including the two #53 introduced beyond the pre-existing generators:
+// workPlanes.create (the cage bar's AngledOrientedSketch) and document.{get,set}SketchSettings
+// (the chamfered-roller and flanged-ring sections' disableSketchInference). Mirrors
+// TestBallBearingBuildErrorsPropagate's sweep for the sibling generator.
+func TestRollerBearingBuildErrorsPropagate(t *testing.T) {
+	methods := []string{
+		wire.MethodParametersList, wire.MethodParametersAdd, wire.MethodSketchCreate,
+		wire.MethodSketchAddEntity, wire.MethodSketchAddConstraint, wire.MethodSketchAddDimension,
+		wire.MethodSketchConstraintStatus, wire.MethodFeaturesAdd, wire.MethodWorkPlanesCreate,
+		wire.MethodDocumentGetSketchSettings, wire.MethodDocumentSetSketchSettings,
+	}
+	for _, m := range methods {
+		if _, err := buildRollerWithFailure(t, m, 0); err == nil {
+			t.Errorf("failMethod %q: Build succeeded, want an error", m)
+		}
+	}
+}
+
+// TestRollerDeriveParamsErrorsPropagate walks deriveRollerParams' own derivation chain — pitch
+// diameter, roller diameter/length, the clearing races (deriveRacesClearing), the flange band
+// (deriveFlangeParams), the chamfer leg (deriveRollerChamferParams) and the cage bar
+// (deriveRollerCageParams) — by letting parameters.list succeed failAfter times (every earlier
+// derive step) before failing the next one, reaching each step's OWN "if err != nil" guard one at
+// a time instead of always tripping the first call (inside PublishParams, already covered by
+// TestRollerBearingBuildErrorsPropagate). No geometry is built until every derive succeeds, so
+// every case must leave the bearing with zero revolves and no roller pattern.
+func TestRollerDeriveParamsErrorsPropagate(t *testing.T) {
+	cases := []struct {
+		name      string
+		failAfter int
+	}{
+		{"pitch_dia (derivePitchDia)", 1},
+		{"roller_dia", 2},
+		{"roller_length", 3},
+		{"outer_race_dia (deriveRacesClearing)", 4},
+		{"flange_axial_clr (deriveFlangeParams)", 6},
+		{"flange_inner_z (deriveFlangeParams)", 7},
+		{"roller_chamfer (deriveRollerChamferParams)", 9},
+		{"roller_subtend (deriveRollerCageParams)", 10},
+	}
+	for _, c := range cases {
+		h, err := buildRollerWithFailure(t, wire.MethodParametersList, c.failAfter)
+		if err == nil {
+			t.Errorf("%s: Build succeeded, want an error", c.name)
+		}
+		if len(h.revolves) != 0 || len(h.patterns) != 0 {
+			t.Errorf("%s: made geometry despite a derive failure: revolves=%d patterns=%d",
+				c.name, len(h.revolves), len(h.patterns))
+		}
+	}
+}
+
+// TestRollerBearingRingStageErrorsPropagate targets Build's own "if err := b.revolveRing(...)"
+// guard (line 47-49) and revolveFlangedOuterRing's three guards (the flanged
+// outer_dia/outer_race_dia ring, #53). The revolveRing case fails at the plain bore ring's very
+// first call (its Sketch) — the minimal way to reach Build's guard without exercising
+// revolveRing's own internals, a pre-existing helper #53 did not touch. Each case lets the
+// earlier sketch.create/constraintStatus/document.getSketchSettings calls through so the failure
+// lands on the named later call, and asserts the ring that call belongs to never finished
+// revolving (revolves stops short of the full roller+bar+inner+outer complement of 4).
+func TestRollerBearingRingStageErrorsPropagate(t *testing.T) {
+	cases := []struct {
+		name         string
+		method       string
+		failAfter    int
+		wantRevolves int // revolves that must have completed before this failure
+	}{
+		{"Build: revolveRing(bore) propagation", wire.MethodSketchCreate, 2, 2},
+		{"revolveFlangedOuterRing: Sketch", wire.MethodSketchCreate, 3, 3},
+		{"revolveFlangedOuterRing: GroundedFlangedRingSection", wire.MethodDocumentGetSketchSettings, 1, 3},
+		{"revolveFlangedOuterRing: AssertFullyConstrained", wire.MethodSketchConstraintStatus, 3, 3},
+	}
+	for _, c := range cases {
+		h, err := buildRollerWithFailure(t, c.method, c.failAfter)
+		if err == nil {
+			t.Errorf("%s: Build succeeded, want an error", c.name)
+		}
+		if len(h.revolves) != c.wantRevolves {
+			t.Errorf("%s: revolves = %d, want %d (the ring under test must not have completed)",
+				c.name, len(h.revolves), c.wantRevolves)
+		}
+	}
+}
+
+// TestFlangedRingSectionErrorsPropagate walks GroundedFlangedRingSection's own build: the closed
+// polyline, the grounded origin, orientFlangedRing's axis alignment and sizeFlangedRing's two
+// dimension passes (the three radii, then the two z-levels) — reached by letting every earlier
+// sketch.addEntity/addConstraint/addDimension call (the roller, the cage bar, the bore ring, and
+// the flanged ring's own disableSketchInference) through first. The flanged ring's Revolve never
+// runs in any case, so revolves must stay at 3 (roller + cage bar + bore ring).
+func TestFlangedRingSectionErrorsPropagate(t *testing.T) {
+	cases := []struct {
+		name      string
+		method    string
+		failAfter int
+	}{
+		{"closedPolyline", wire.MethodSketchAddEntity, 7},
+		{"groundedOrigin", wire.MethodSketchAddEntity, 8},
+		{"orientFlangedRing", wire.MethodSketchAddConstraint, 18},
+		{"sizeFlangedRing radii", wire.MethodSketchAddDimension, 16},
+		{"sizeFlangedRing z-levels", wire.MethodSketchAddDimension, 19},
+	}
+	for _, c := range cases {
+		h, err := buildRollerWithFailure(t, c.method, c.failAfter)
+		if err == nil {
+			t.Errorf("%s: Build succeeded, want an error", c.name)
+		}
+		if len(h.revolves) != 3 {
+			t.Errorf("%s: revolves = %d, want 3 (the flanged ring must not have completed)", c.name, len(h.revolves))
+		}
+	}
+}
+
+// TestRollerChamferedSectionErrorsPropagate walks GroundedChamferedRollerSection's own build
+// beyond its first (disableSketchInference/groundedOrigin) calls — already reached by
+// TestRollerBearingBuildErrorsPropagate's sweep — into the closed polyline, the centerline weld
+// (addRollerCenterline) and the axis anchor (anchorRollerRodAxis). No roller has revolved yet at
+// any of these points, so revolves and the pattern must both stay empty.
+func TestRollerChamferedSectionErrorsPropagate(t *testing.T) {
+	cases := []struct {
+		name      string
+		method    string
+		failAfter int
+	}{
+		{"closedPolyline", wire.MethodSketchAddEntity, 1},
+		{"addRollerCenterline: AddCenterline", wire.MethodSketchAddEntity, 2},
+		{"addRollerCenterline: weld start", wire.MethodSketchAddConstraint, 1},
+		{"addRollerCenterline: weld end", wire.MethodSketchAddConstraint, 2},
+		{"anchorRollerRodAxis: alignLevels", wire.MethodSketchAddConstraint, 3},
+		{"anchorRollerRodAxis: centre roller axially", wire.MethodSketchAddDimension, 1},
+	}
+	for _, c := range cases {
+		h, err := buildRollerWithFailure(t, c.method, c.failAfter)
+		if err == nil {
+			t.Errorf("%s: Build succeeded, want an error", c.name)
+		}
+		if len(h.revolves) != 0 || len(h.patterns) != 0 {
+			t.Errorf("%s: made geometry despite a roller-section failure: revolves=%d patterns=%d",
+				c.name, len(h.revolves), len(h.patterns))
+		}
 	}
 }
