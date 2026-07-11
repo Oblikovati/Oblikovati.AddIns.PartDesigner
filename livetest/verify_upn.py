@@ -16,8 +16,13 @@ import mcp
 
 PANEL = "com.oblikovati.part-designer.panel"
 
-# designation -> published sectional area A (cm^2), length is the catalogue 6000 mm.
-PUBLISHED = {"UPN 80": 11.0, "UPN 100": 13.5, "UPN 160": 24.0, "UPN 200": 32.2}
+# designation -> published EN 10279 sectional area A (cm^2), length is the catalogue 6000 mm.
+PUBLISHED = {
+    "UPN 50": 7.12, "UPN 65": 9.03, "UPN 80": 11.0, "UPN 100": 13.5, "UPN 120": 17.0,
+    "UPN 140": 20.4, "UPN 160": 24.0, "UPN 180": 28.0, "UPN 200": 32.2, "UPN 220": 37.4,
+    "UPN 240": 42.3, "UPN 260": 48.3, "UPN 280": 53.3, "UPN 300": 58.8, "UPN 320": 75.8,
+    "UPN 350": 77.3, "UPN 380": 80.4, "UPN 400": 91.5,
+}
 LENGTH_MM = 6000.0
 
 
@@ -43,12 +48,16 @@ def settle():
     return prev
 
 
+FAMILY = "upn-en10279"  # the catalog family id
+
+
 def place(size):
-    print(call("close_all_documents", {"force": True}))
-    print("show:", call("execute_command", {"id": "PartDesigner.Show"}))
-    for ctrl, val in [("standard", "EN"), ("family", "EN 10279 UPN"), ("size", size)]:
-        print(f"set {ctrl}={val}:", call("set_panel_value", {"windowId": PANEL, "controlId": ctrl, "value": val}))
-    print("place:", call("execute_command", {"id": "PartDesigner.Place"}))
+    call("close_all_documents", {"force": True})
+    call("execute_command", {"id": "PartDesigner.Show"})
+    # The panel is a catalog tree (family id) + a members table (member key).
+    call("set_panel_value", {"windowId": PANEL, "controlId": "catalog", "value": FAMILY})
+    call("set_panel_value", {"windowId": PANEL, "controlId": "members", "value": "designation=" + size})
+    call("execute_command", {"id": "PartDesigner.Place"})
     return settle()
 
 

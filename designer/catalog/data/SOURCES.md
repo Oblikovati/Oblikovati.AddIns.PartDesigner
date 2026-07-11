@@ -268,9 +268,9 @@ the inch designation instead of a metric d/P pair.
   are tf/2 to rounding; both radii are derived from tf, no per-size radius column). The section is
   symmetric about its X axis, web on the left. The DIN 1026 line at which tf is measured is not
   published, so the reference is fixed toe-ward of mid-overhang (`taperRefFrac`) by calibrating the
-  extruded cross-section area to the tabulated EN 10279 A — matched to **<0.5 % across UPN 80…200**
-  (verified live, `livetest/verify_upn.py`). Height, flange reach, web thickness and the fillet
-  radii are exact.
+  extruded cross-section area to the tabulated EN 10279 A — matched to **<0.5 % for UPN 50–300** and
+  within **~1.1 % for the heavy UPN 320–400** (verified live, `livetest/verify_upn.py`). Height,
+  flange reach, web thickness and the fillet radii are exact.
 - Length is a representative stock length (6000 mm), user-overridable.
 
 ### `angle_equal_en10056.json`, `angle_unequal_en10056.json` — EN 10056 (hot-rolled angles, L)
