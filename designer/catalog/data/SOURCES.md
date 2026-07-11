@@ -261,10 +261,11 @@ the inch designation instead of a metric d/P pair.
 - Section dimensions h, b, tw, tf are the nominal values tabulated in EN 10279:2000 for the UPN
   series (e.g. UPN 200 = 200/75/8.5/11.5, where tf is the standard reference flange thickness). A
   representative subset (UPN 80/100/160/200) is included.
-- **Modelled sharp, constant flange thickness**: the ~5 % (≈2.9°) inner-flange taper and the
-  root/toe radii of the real UPN section are deferred refinements. The section is symmetric about
-  its X axis with the web on the left; overall height, flange reach, web and flange thicknesses are
-  exact.
+- **Inner-flange taper is 8 %** (≈4.57°, DIN 1026-1 / EN 10279 — cross-checked against amesweb,
+  steelstd.com and montanstahl UPN datasheets; an earlier note of "~5 %" was wrong). The root
+  radius r1 equals the flange thickness tf and the toe radius r2 ≈ tf/2 (r2 = 4/4.5/5.5/6 mm for
+  UPN 80/100/160/200 per amesweb). The section is symmetric about its X axis with the web on the
+  left; overall height, flange reach, web and (reference) flange thickness are exact.
 - Length is a representative stock length (6000 mm), user-overridable.
 
 ### `angle_equal_en10056.json`, `angle_unequal_en10056.json` — EN 10056 (hot-rolled angles, L)
