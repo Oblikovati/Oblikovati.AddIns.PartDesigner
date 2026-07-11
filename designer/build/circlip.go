@@ -25,8 +25,8 @@ const (
 // split ring: a rectangular radial cross-section (inner_dia/2 → outer_dia/2, thickness tall)
 // revolved about the axis through splitGapAngle, leaving the split gap. The ring's bore/outer
 // diameter and thickness are parameter-driven. When the plier-lug guard passes, the two eyes'
-// derived parameters are published too (#61 Task 1); the eye geometry itself — the annulus
-// sketches and extrudes at the gap edges — is a tracked follow-up (Task 2).
+// derived parameters are published (#61 Task 1) and their geometry — a flat annulus extruded
+// through the thickness at each gap edge — is built too (#61 Task 2, see buildCirclipEar).
 type Circlip struct{}
 
 // Kind is the family `generator` binding for retaining rings.
@@ -34,9 +34,9 @@ func (Circlip) Kind() string { return "circlip" }
 
 // Build publishes the member's parameters, revolves the ring's radial section through the split
 // gap, and — when circlipEarsFit(rm) allows it — publishes the derived plier-lug-ear parameters
-// (external/internal branch from the family category; see circlipIsExternal). It expects the
-// family to expose `inner_dia`, `outer_dia`, `thickness` (and drives the revolve to `length` via
-// the fixed split-gap angle).
+// and builds the two eyes (one per gap edge: 0° and splitGapAngle; external/internal branch from
+// the family category, see circlipIsExternal). It expects the family to expose `inner_dia`,
+// `outer_dia`, `thickness` (and drives the revolve to `length` via the fixed split-gap angle).
 func (Circlip) Build(b *PartBuilder, rm ResolvedMember) error {
 	if err := b.PublishParams(rm); err != nil {
 		return err
@@ -57,7 +57,30 @@ func (Circlip) Build(b *PartBuilder, rm ResolvedMember) error {
 	if !circlipEarsFit(rm) {
 		return nil // guard fails (e.g. an undersized custom member) → ring only, no ears
 	}
-	return deriveCirclipEarParams(b, circlipIsExternal(rm))
+	if err := deriveCirclipEarParams(b, circlipIsExternal(rm)); err != nil {
+		return err
+	}
+	if err := b.buildCirclipEar("0 deg"); err != nil {
+		return err
+	}
+	return b.buildCirclipEar(splitGapAngle)
+}
+
+// buildCirclipEar builds one plier-lug eye at the given gap-edge azimuth: a flat annulus on a
+// work plane at the ring's axial mid-level, extruded through the ring thickness as a separate body
+// overlapping the band end. Called once per gap edge (0° and splitGapAngle).
+func (b *PartBuilder) buildCirclipEar(azimuthExpr string) error {
+	sk, err := b.OffsetPlaneSketch("thickness / 2")
+	if err != nil {
+		return err
+	}
+	if err := sk.GroundedEyeSection("eye_radius_pos", azimuthExpr, "eye_outer_dia", "plier_hole_dia"); err != nil {
+		return err
+	}
+	if err := sk.AssertFullyConstrained(); err != nil {
+		return err
+	}
+	return b.ExtrudeDirected(sk, "thickness", "new", "symmetric")
 }
 
 // circlipIsExternal reports whether the ring is an external (shaft) ring — ears project radially

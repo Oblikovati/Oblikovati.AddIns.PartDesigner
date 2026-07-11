@@ -72,7 +72,10 @@ func circlipIntMember(key string, nominal, outerDia, innerDia, thickness float64
 }
 
 // TestCirclipRevolvesSplitRing is the D3 acceptance check: the ring parameters are published and a
-// radial section is revolved through the split-gap angle (under a full turn) as one new solid.
+// radial section is revolved through the split-gap angle (under a full turn) as one new solid —
+// not extruded. circlipMember's fixture also passes circlipEarsFit (see its doc comment), so since
+// #61 Task 2 the two plier-lug eyes are additionally built as their own extrudes; that is the
+// two-extrude assertion below (see TestCirclipBuildsTwoEars for the dedicated ear-extrude check).
 func TestCirclipRevolvesSplitRing(t *testing.T) {
 	h := &fakeHost{dof: 0}
 	if err := (Circlip{}).Build(newBuilder(h, catalog.UnitsMillimetre), circlipMember(20, 19, 27, 1.2)); err != nil {
@@ -89,8 +92,8 @@ func TestCirclipRevolvesSplitRing(t *testing.T) {
 	if rv.Angle != splitGapAngle || rv.Operation != "new" || rv.AxisRef != "origin/axis/z" {
 		t.Errorf("revolve = %+v, want %s about z / new", rv, splitGapAngle)
 	}
-	if len(h.extrudes) != 0 {
-		t.Errorf("extrudes = %d, want 0 (the ring is revolved, not extruded)", len(h.extrudes))
+	if len(h.extrudes) != 2 {
+		t.Errorf("extrudes = %d, want 2 (the ring is revolved not extruded; the two lug ears fit and are extruded)", len(h.extrudes))
 	}
 }
 
@@ -228,6 +231,40 @@ func TestCirclipEarDeriveParamsErrorsPropagate(t *testing.T) {
 		if err == nil {
 			t.Errorf("%s: Build succeeded, want an error", c.name)
 		}
+	}
+}
+
+// TestCirclipBuildsTwoEars is the Task-2 acceptance check: after the ring revolve, the two
+// plier-lug eyes are each extruded through the thickness as a separate symmetric solid.
+// Two ears are extruded (thickness/new/symmetric) AFTER the ring revolve; the ring is 1 revolve.
+func TestCirclipBuildsTwoEars(t *testing.T) {
+	h := &fakeHost{dof: 0}
+	if err := (Circlip{}).Build(newBuilder(h, catalog.UnitsMillimetre), circlipExtMember("d30", 30, 28.6, 38.6, 1.5)); err != nil {
+		t.Fatalf("Build error = %v", err)
+	}
+	if len(h.revolves) != 1 {
+		t.Fatalf("revolves = %d, want 1 (the ring)", len(h.revolves))
+	}
+	if len(h.extrudes) != 2 {
+		t.Fatalf("extrudes = %d, want 2 (the two lug ears)", len(h.extrudes))
+	}
+	for i, e := range h.extrudes {
+		if e.Distance != "thickness" || e.Operation != "new" || e.Direction != "symmetric" {
+			t.Errorf("ear extrude[%d] = %+v, want thickness/new/symmetric", i, e)
+		}
+	}
+}
+
+// TestCirclipSkipsEarsWhenUnfit is the Task-2 guard check: a member that fails circlipEarsFit
+// builds the ring only — no ear extrudes.
+// A member that fails the fit guard builds the ring only — no ear extrudes.
+func TestCirclipSkipsEarsWhenUnfit(t *testing.T) {
+	h := &fakeHost{dof: 0}
+	if err := (Circlip{}).Build(newBuilder(h, catalog.UnitsMillimetre), circlipIntMember("x", 6, 9.0, 4.0, 1.0)); err != nil {
+		t.Fatalf("Build error = %v", err)
+	}
+	if len(h.extrudes) != 0 {
+		t.Errorf("extrudes = %d, want 0 (ears skipped for an unfit ring)", len(h.extrudes))
 	}
 }
 
