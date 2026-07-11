@@ -12,10 +12,77 @@
     { "name": "l", "param": "length", "type": "length" }
   ],
   "members": [
-    { "designation": "CHS 42.4x3", "d": 42.4, "t": 3.0, "l": 6000 },
-    { "designation": "CHS 48.3x3", "d": 48.3, "t": 3.0, "l": 6000 },
-    { "designation": "CHS 60.3x4", "d": 60.3, "t": 4.0, "l": 6000 },
-    { "designation": "CHS 76.1x4", "d": 76.1, "t": 4.0, "l": 6000 },
-    { "designation": "CHS 88.9x5", "d": 88.9, "t": 5.0, "l": 6000 }
+    {
+      "designation": "CHS 21.3x2.5",
+      "d": 21.3,
+      "t": 2.5,
+      "l": 6000
+    },
+    {
+      "designation": "CHS 26.9x2.5",
+      "d": 26.9,
+      "t": 2.5,
+      "l": 6000
+    },
+    {
+      "designation": "CHS 33.7x3",
+      "d": 33.7,
+      "t": 3.0,
+      "l": 6000
+    },
+    {
+      "designation": "CHS 42.4x3",
+      "d": 42.4,
+      "t": 3.0,
+      "l": 6000
+    },
+    {
+      "designation": "CHS 48.3x3",
+      "d": 48.3,
+      "t": 3.0,
+      "l": 6000
+    },
+    {
+      "designation": "CHS 60.3x4",
+      "d": 60.3,
+      "t": 4.0,
+      "l": 6000
+    },
+    {
+      "designation": "CHS 76.1x4",
+      "d": 76.1,
+      "t": 4.0,
+      "l": 6000
+    },
+    {
+      "designation": "CHS 88.9x5",
+      "d": 88.9,
+      "t": 5.0,
+      "l": 6000
+    },
+    {
+      "designation": "CHS 101.6x5",
+      "d": 101.6,
+      "t": 5.0,
+      "l": 6000
+    },
+    {
+      "designation": "CHS 114.3x5",
+      "d": 114.3,
+      "t": 5.0,
+      "l": 6000
+    },
+    {
+      "designation": "CHS 139.7x6.3",
+      "d": 139.7,
+      "t": 6.3,
+      "l": 6000
+    },
+    {
+      "designation": "CHS 168.3x6.3",
+      "d": 168.3,
+      "t": 6.3,
+      "l": 6000
+    }
   ]
 }

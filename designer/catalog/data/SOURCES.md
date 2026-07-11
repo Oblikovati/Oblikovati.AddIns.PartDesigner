@@ -57,6 +57,35 @@ Handbook reproductions); any size that could not be dual-confirmed was dropped, 
 - **ASME B17.1 square keys** (11 sizes; 1/8–1-1/4 in) — square section b = h from the standard's
   key-vs-shaft table; length representative.
 
+### Structural sections (2026-07)
+
+The EN and AISC section families were grown from a 3–6-size seed to each standard's section list.
+Structural sizes are **not** bounded to ~50 mm — a beam's height is not a bolt diameter — so each
+series spans its standard's small-to-mid range. Every profile dimension (h/b/tw/tf/r, wall t, etc.)
+was transcribed verbatim from an official section table and dual-confirmed against a second
+independent source; `l` stays the seed's representative stock length (6000 mm EN, 240 in AISC,
+1000 mm round bar). Where a standard lists several thicknesses per nominal size (angles, hollow
+sections, flat bar), one produced thickness per size was taken and confirmed as a real product.
+
+- **EN 10365 IPE / HE A / HE B** (18 / 17 / 17 sizes; IPE 80–600, HE 100–500) — h/b/tw/tf/r verbatim
+  (eurocodeapplied / build-your-vision / Montanstahl / structolution), all seed anchors reproduced.
+- **EN 10279 UPN channels** (18; UPN 50–400) — h/b/tw/tf verbatim (DIN 1026-1 / Montanstahl); the
+  standard's real non-monotonic top-end flange thicknesses (UPN 350/380) are preserved, not smoothed.
+- **AISC W / C** (9 W-shapes W6–W24, one per depth; 10 C-channels C3–C15) — d/bf/tw/tf verbatim from
+  the AISC Shapes Database; the W `r` column is the AISC design fillet `r = kdes − tf` (verified
+  against every anchor). C-shapes carry no radius column.
+- **EN 10056 angles** (equal 15, L 20–200; unequal 17, to L 200×100) — leg thickness and root radius
+  `r1` verbatim from EN 10056-1:2017; toe radius `r2 = r1/2` per the EN convention (matches all
+  anchors).
+- **EN 10055 tees** (11; T 20–120) — tw = tf single standard thickness per nominal, root `r = 2`
+  throughout (Montanstahl / ArcelorMittal e-steel).
+- **EN 10219 hollow sections** — SHS (16; 20–200), RHS (13; to 200×120), CHS (12; OD 21.3–168.3),
+  each with one produced wall thickness confirmed in the standard's thickness list (Tata/Celsius,
+  RoyMech).
+- **ISO 1035 round bar** (16; ⌀ 8–100 mm) — diameters from the ISO 1035-1 preferred-size column.
+- **EN 10058 flat bar** (13; b 15–100 mm) — width × one preferred thickness from EN 10058 Table 1
+  (10×4 / 12×4 dropped — the standard has no 4 mm thickness).
+
 ## Fasteners / Washers
 
 ### `washer_din127.json` — DIN 127 Form B (spring lock washer)
