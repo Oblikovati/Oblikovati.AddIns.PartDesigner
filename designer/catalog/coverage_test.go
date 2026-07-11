@@ -78,6 +78,55 @@ func TestShaftSizeCoverage(t *testing.T) {
 	assertEndpoints(t, c, endpoints)
 }
 
+// TestStructuralSizeCoverage is the structural-steel twin of the fastener/shaft coverage tests:
+// the EN / AISC section families were grown from a 3–6-size seed to each standard's section list
+// (see data/SOURCES.md). Structural sizes are not bounded to ~50 mm — a beam's height isn't a bolt
+// diameter — so each series spans its standard's small-to-mid range. It guards the aggregate floor
+// plus per-family smallest/largest endpoints across all eight structural generators.
+func TestStructuralSizeCoverage(t *testing.T) {
+	c, err := Load()
+	if err != nil {
+		t.Fatalf("Load() error = %v", err)
+	}
+
+	total := 0
+	for _, f := range c.Families() {
+		if len(f.Category) > 0 && f.Category[0] == "Structural" {
+			total += len(f.Members)
+		}
+	}
+	// The expanded structural catalogue carries 202 members; floor set with headroom.
+	if total < 190 {
+		t.Errorf("total structural members = %d, want >= 190 (the expanded section-series coverage)", total)
+	}
+
+	endpoints := []struct{ family, key string }{
+		{"ipe-en10365", "designation=IPE 80"},               // i_beam: smallest IPE
+		{"ipe-en10365", "designation=IPE 600"},              // largest
+		{"hea-en10365", "designation=HE 500 A"},             // largest HEA
+		{"heb-en10365", "designation=HE 500 B"},             // largest HEB
+		{"w-aisc", "designation=W24x68"},                    // largest AISC W
+		{"upn-en10279", "designation=UPN 50"},               // channel: smallest UPN
+		{"upn-en10279", "designation=UPN 400"},              // largest
+		{"c-aisc", "designation=C3x4.1"},                    // smallest AISC channel
+		{"angle-equal-en10056", "designation=L 20x20x3"},    // smallest equal angle
+		{"angle-equal-en10056", "designation=L 200x200x20"}, // largest
+		{"angle-unequal-en10056", "designation=L 200x100x12"},
+		{"tee-en10055", "designation=T 20"},          // smallest tee
+		{"tee-en10055", "designation=T 120"},         // largest
+		{"shs-en10219", "designation=SHS 20x20x2"},   // smallest SHS
+		{"shs-en10219", "designation=SHS 200x200x8"}, // largest
+		{"rhs-en10219", "designation=RHS 200x120x6"}, // largest RHS
+		{"chs-en10219", "designation=CHS 21.3x2.5"},  // smallest CHS
+		{"chs-en10219", "designation=CHS 168.3x6.3"}, // largest
+		{"iso1035-round-bar", "d=8,l=1000"},          // smallest round bar
+		{"iso1035-round-bar", "d=100,l=1000"},        // largest
+		{"en10058-flat-bar", "b=15,a=5"},             // smallest flat bar
+		{"en10058-flat-bar", "b=100,a=12"},           // largest
+	}
+	assertEndpoints(t, c, endpoints)
+}
+
 // assertEndpoints checks each (family, memberKey) pair resolves in the loaded catalogue — a
 // regression guard shared by the per-category coverage tests.
 func assertEndpoints(t *testing.T, c *Catalog, endpoints []struct{ family, key string }) {

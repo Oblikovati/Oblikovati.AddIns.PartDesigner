@@ -13,10 +13,117 @@
     { "name": "l", "param": "length", "type": "length" }
   ],
   "members": [
-    { "designation": "SHS 40x40x3", "b": 40, "h": 40, "t": 3, "l": 6000 },
-    { "designation": "SHS 50x50x3", "b": 50, "h": 50, "t": 3, "l": 6000 },
-    { "designation": "SHS 60x60x4", "b": 60, "h": 60, "t": 4, "l": 6000 },
-    { "designation": "SHS 80x80x4", "b": 80, "h": 80, "t": 4, "l": 6000 },
-    { "designation": "SHS 100x100x5", "b": 100, "h": 100, "t": 5, "l": 6000 }
+    {
+      "designation": "SHS 20x20x2",
+      "b": 20,
+      "h": 20,
+      "t": 2,
+      "l": 6000
+    },
+    {
+      "designation": "SHS 25x25x2.5",
+      "b": 25,
+      "h": 25,
+      "t": 2.5,
+      "l": 6000
+    },
+    {
+      "designation": "SHS 30x30x2.5",
+      "b": 30,
+      "h": 30,
+      "t": 2.5,
+      "l": 6000
+    },
+    {
+      "designation": "SHS 40x40x3",
+      "b": 40,
+      "h": 40,
+      "t": 3,
+      "l": 6000
+    },
+    {
+      "designation": "SHS 50x50x3",
+      "b": 50,
+      "h": 50,
+      "t": 3,
+      "l": 6000
+    },
+    {
+      "designation": "SHS 60x60x4",
+      "b": 60,
+      "h": 60,
+      "t": 4,
+      "l": 6000
+    },
+    {
+      "designation": "SHS 70x70x4",
+      "b": 70,
+      "h": 70,
+      "t": 4,
+      "l": 6000
+    },
+    {
+      "designation": "SHS 80x80x4",
+      "b": 80,
+      "h": 80,
+      "t": 4,
+      "l": 6000
+    },
+    {
+      "designation": "SHS 90x90x5",
+      "b": 90,
+      "h": 90,
+      "t": 5,
+      "l": 6000
+    },
+    {
+      "designation": "SHS 100x100x5",
+      "b": 100,
+      "h": 100,
+      "t": 5,
+      "l": 6000
+    },
+    {
+      "designation": "SHS 120x120x5",
+      "b": 120,
+      "h": 120,
+      "t": 5,
+      "l": 6000
+    },
+    {
+      "designation": "SHS 140x140x6",
+      "b": 140,
+      "h": 140,
+      "t": 6,
+      "l": 6000
+    },
+    {
+      "designation": "SHS 150x150x6",
+      "b": 150,
+      "h": 150,
+      "t": 6,
+      "l": 6000
+    },
+    {
+      "designation": "SHS 160x160x6",
+      "b": 160,
+      "h": 160,
+      "t": 6,
+      "l": 6000
+    },
+    {
+      "designation": "SHS 180x180x8",
+      "b": 180,
+      "h": 180,
+      "t": 8,
+      "l": 6000
+    },
+    {
+      "designation": "SHS 200x200x8",
+      "b": 200,
+      "h": 200,
+      "t": 8,
+      "l": 6000
+    }
   ]
 }
