@@ -134,6 +134,12 @@ func (h *fakeHost) addEntityReply(req []byte) ([]byte, error) {
 			PointIDs: []uint64{81, 82, 83}, // centre, start, end
 		})
 	}
+	if a.Kind == "fillet" {
+		return json.Marshal(wire.AddSketchEntityResult{
+			EntityID: 85, Kind: "fillet",
+			PointIDs: []uint64{86, 87, 88}, // the blend arc's centre, start, end
+		})
+	}
 	if a.Kind == "line" {
 		return json.Marshal(wire.AddSketchEntityResult{
 			EntityID: 90, Kind: "line",
