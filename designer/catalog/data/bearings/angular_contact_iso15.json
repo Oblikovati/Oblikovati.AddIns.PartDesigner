@@ -22,6 +22,8 @@
     { "designation": "7205-B", "d": 25, "D": 52, "B": 15, "alpha": 40, "Z": 12 },
     { "designation": "7206-B", "d": 30, "D": 62, "B": 16, "alpha": 40, "Z": 13 },
     { "designation": "7207-B", "d": 35, "D": 72, "B": 17, "alpha": 40, "Z": 14 },
-    { "designation": "7208-B", "d": 40, "D": 80, "B": 18, "alpha": 40, "Z": 14 }
+    { "designation": "7208-B", "d": 40, "D": 80, "B": 18, "alpha": 40, "Z": 14 },
+    { "designation": "7209-B", "d": 45, "D": 85, "B": 19, "alpha": 40, "Z": 15 },
+    { "designation": "7210-B", "d": 50, "D": 90, "B": 20, "alpha": 40, "Z": 15 }
   ]
 }

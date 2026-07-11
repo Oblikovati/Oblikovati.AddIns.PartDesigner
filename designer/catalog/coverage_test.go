@@ -127,6 +127,44 @@ func TestStructuralSizeCoverage(t *testing.T) {
 	assertEndpoints(t, c, endpoints)
 }
 
+// TestBearingSizeCoverage is the bearings twin of the other coverage tests: the ISO 15 / 104 / 355
+// and ISO 4379 families were topped up to their designation series for bore ⌀ ≤ 50 mm (see
+// data/SOURCES.md). Every boundary dimension (d/D/B/H/T) is officially sourced; the rolling-element
+// count Z is a representational count (no manufacturer publishes it — SOURCES.md documents this).
+// It guards the aggregate floor plus per-family endpoints across all seven bearing generators.
+func TestBearingSizeCoverage(t *testing.T) {
+	c, err := Load()
+	if err != nil {
+		t.Fatalf("Load() error = %v", err)
+	}
+
+	total := 0
+	for _, f := range c.Families() {
+		if len(f.Category) > 0 && f.Category[0] == "Bearings" {
+			total += len(f.Members)
+		}
+	}
+	// The topped-up bearing catalogue carries 117 members; floor set with headroom.
+	if total < 105 {
+		t.Errorf("total bearing members = %d, want >= 105 (the topped-up designation coverage)", total)
+	}
+
+	endpoints := []struct{ family, key string }{
+		{"iso15-deep-groove-ball-bearing", "designation=6010"}, // new 60-series bore-50
+		{"iso15-deep-groove-ball-bearing", "designation=6310"}, // new 63-series bore-50
+		{"iso15-angular-contact-ball-bearing", "designation=7210-B"},
+		{"iso15-cylindrical-roller-bearing", "designation=NU310"},         // new NU3 series
+		{"iso355-tapered-roller-bearing", "designation=30203"},            // new small 302xx
+		{"iso355-tapered-roller-bearing", "designation=30310"},            // new large 303xx
+		{"iso104-thrust-ball-bearing", "designation=51109"},               // filled bore-45 gap
+		{"iso104-self-aligning-thrust-ball-bearing", "designation=53200"}, // extended series
+		{"iso104-self-aligning-thrust-ball-bearing", "designation=53210"},
+		{"iso4379-sleeve-bush", "d=6,L=10"},  // new smallest bush
+		{"iso4379-sleeve-bush", "d=45,L=40"}, // new bush
+	}
+	assertEndpoints(t, c, endpoints)
+}
+
 // assertEndpoints checks each (family, memberKey) pair resolves in the loaded catalogue — a
 // regression guard shared by the per-category coverage tests.
 func assertEndpoints(t *testing.T, c *Catalog, endpoints []struct{ family, key string }) {
