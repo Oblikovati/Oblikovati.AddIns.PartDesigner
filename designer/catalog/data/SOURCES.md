@@ -29,6 +29,34 @@ preferred series up to ~50 mm nominal** (metric) / ~2 in (inch). Provenance for 
   page tabulates no M42/M48); DIN 939 stud starts at **M6** (no smaller size is tabulated);
   ASME B18.22.1 washer omits the **3/16** row (genuine cross-source disagreement).
 
+### Shaft parts (2026-07)
+
+The retaining rings, pins and keys were likewise grown from a 5–8-size seed to each standard's
+tabulated series. Every fixed dimension was transcribed verbatim from an official table and
+cross-checked against ≥2 independent sources (fasteners.eu, manufacturer catalogues, Machinery's
+Handbook reproductions); any size that could not be dual-confirmed was dropped, not guessed.
+
+- **DIN 471 / 472 circlips** (35 / 37 sizes; shaft 3–50 mm / bore 8–62 mm) — groove diameter `di`
+  and thickness `s` verbatim (aspenfasteners / Rotor Clip / ametric for 471; fasteners.eu /
+  Westfield / Arcon for 472). The ring's free *outer* diameter is not a tabulated DIN quantity, so
+  `do` follows the catalogue's existing representative rule (`do = d2 + 2·round(a, 0.5)`, which
+  reproduces every pre-existing anchor exactly); the ring stays representational (no lug ears).
+- **ASME B27.7 external ring** (26 sizes; 1/4–2 in) — thickness `s` verbatim (American Ring /
+  Intech); `di`/`do` follow the catalogue's representative convention (di ≈ 0.96·d, do ≈ 1.66·d).
+- **ISO 2338 / ASME B18.8.2 dowel pins** (17 / 14 sizes) — the diameter series is the standard's
+  own (ISO 2338:1997 R'10 nominals; ASME B18.8.2 inch series); length representative (≈ 5·d
+  metric, 4·d inch).
+- **ISO 2341 clevis pins** (16 sizes; d 3–36 mm) — dk/k/d1/le verbatim, dual-source confirmed;
+  **d = 40/45/50 dropped** (single-publisher only, split-pin hole d1 unconfirmable). Length
+  representative.
+- **ISO 1234 split pins** (16 sizes; d 0.6–20 mm) — a/b/c verbatim across fasteners.eu /
+  globalfastener / fullerfasteners. Length ≈ 10·d representative.
+- **DIN 6885 / 6887 keys** (20 / 15 sizes; b 2–50 mm / 8–50 mm) — the width × height pairing (and
+  the gib-nose height h2 for 6887) transcribed verbatim from ISO/R 773 / DIN 6885-1 / DIN 6887,
+  including the non-tracking plateaus (12×8, 22×14, 25×14). Length representative.
+- **ASME B17.1 square keys** (11 sizes; 1/8–1-1/4 in) — square section b = h from the standard's
+  key-vs-shaft table; length representative.
+
 ## Fasteners / Washers
 
 ### `washer_din127.json` — DIN 127 Form B (spring lock washer)
