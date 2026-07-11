@@ -3,6 +3,7 @@
 package build
 
 import (
+	"strings"
 	"testing"
 
 	"oblikovati.org/api/wire"
@@ -265,6 +266,20 @@ func TestCirclipSkipsEarsWhenUnfit(t *testing.T) {
 	}
 	if len(h.extrudes) != 0 {
 		t.Errorf("extrudes = %d, want 0 (ears skipped for an unfit ring)", len(h.extrudes))
+	}
+}
+
+// TestEyeSeedYRejectsNonLiteralAzimuth is the #61 fix-pass regression for eyeSeedY's untested
+// error branch (Task 2 review Finding 2): a non-"N deg"-literal azimuth (e.g. a parametric
+// expression) can't be scanned for a numeric seed sign, so eyeSeedY must return a non-nil error
+// naming the offending value rather than silently defaulting a branch.
+func TestEyeSeedYRejectsNonLiteralAzimuth(t *testing.T) {
+	_, err := eyeSeedY("garbage")
+	if err == nil {
+		t.Fatal("eyeSeedY(\"garbage\") returned nil error, want a parse error")
+	}
+	if !strings.Contains(err.Error(), "garbage") {
+		t.Errorf("eyeSeedY error = %q, want it to include the offending value %q", err.Error(), "garbage")
 	}
 }
 

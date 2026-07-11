@@ -77,9 +77,6 @@ func (b *PartBuilder) buildCirclipEar(azimuthExpr string) error {
 	if err := sk.GroundedEyeSection("eye_radius_pos", azimuthExpr, "eye_outer_dia", "plier_hole_dia"); err != nil {
 		return err
 	}
-	if err := sk.AssertFullyConstrained(); err != nil {
-		return err
-	}
 	return b.ExtrudeDirected(sk, "thickness", "new", "symmetric")
 }
 

@@ -22,29 +22,46 @@ const (
 // then hangs each circle's centre on that shared point — never Fix, see its doc — so both circles
 // stay tied to the parametric polar centre and re-drive with eye_radius_pos/azimuth.
 func (s *SketchContext) GroundedEyeSection(centreRadius, azimuth, eyeDia, holeDia string) error {
-	o, err := s.groundedOrigin()
+	if err := s.disableSketchInference(); err != nil {
+		return err
+	}
+	centre, err := s.groundedEyeCentre(centreRadius, azimuth)
 	if err != nil {
 		return err
+	}
+	if err := s.circleAtPoint(centre, eyeDia); err != nil {
+		return err
+	}
+	if err := s.circleAtPoint(centre, holeDia); err != nil {
+		return err
+	}
+	return s.assertNoRedundancy("circlip plier-lug eye")
+}
+
+// groundedEyeCentre builds the grounded +X reference line and the radial line whose Distance/Angle
+// dimensions pin the eye centre at (centreRadius, azimuth), and returns that centre point's ID —
+// split out of GroundedEyeSection to keep both functions under the funlen ceiling (CLAUDE.md).
+func (s *SketchContext) groundedEyeCentre(centreRadius, azimuth string) (uint64, error) {
+	o, err := s.groundedOrigin()
+	if err != nil {
+		return 0, err
 	}
 	ref, err := s.addFixedReferenceLine(o)
 	if err != nil {
-		return err
+		return 0, err
 	}
 	seedY, err := eyeSeedY(azimuth)
 	if err != nil {
-		return err
+		return 0, err
 	}
 	radial, err := s.addRadialLine(o, seedY)
 	if err != nil {
-		return err
+		return 0, err
 	}
 	if err := s.pinEyeCentre(ref.id, radial.id, o, radial.to, centreRadius, azimuth); err != nil {
-		return err
+		return 0, err
 	}
-	if err := s.circleAtPoint(radial.to, eyeDia); err != nil {
-		return err
-	}
-	return s.circleAtPoint(radial.to, holeDia)
+	return radial.to, nil
 }
 
 // eyeSeedY picks the radial line's construction seed Y (magnitude eyeCentreSeedYMag, sign from
