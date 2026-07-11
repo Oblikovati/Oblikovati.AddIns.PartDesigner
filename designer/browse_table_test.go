@@ -4,7 +4,31 @@ package designer
 
 import (
 	"testing"
+
+	"oblikovati.org/part-designer/designer/catalog"
 )
+
+// columnHeader turns the descriptive Param into a full-word header (the cryptic standards symbol
+// Name is not shown), expands known abbreviations, and falls back to Name only when Param is empty.
+func TestColumnHeader(t *testing.T) {
+	cases := []struct {
+		name, param, want string
+	}{
+		{"s", "across_flats", "Across Flats"},
+		{"k", "head_height", "Head Height"},
+		{"D", "outer_dia", "Outer Diameter"}, // abbreviation expanded
+		{"e", "hole_end_dist", "Hole End Distance"},
+		{"l", "length", "Length"}, // single word
+		{"a", "leg_a", "Leg A"},   // trailing single letter title-cased
+		{"Size", "", "Size"},      // no param -> fall back to the symbol Name
+	}
+	for _, c := range cases {
+		got := columnHeader(catalog.Column{Name: c.name, Param: c.param})
+		if got != c.want {
+			t.Errorf("columnHeader(name=%q,param=%q) = %q, want %q", c.name, c.param, got, c.want)
+		}
+	}
+}
 
 // tableRows must produce one row per member, keyed by the member Key, with a cell per declared
 // column in column order — the full family-table view.
