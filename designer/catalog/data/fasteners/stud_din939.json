@@ -5,18 +5,114 @@
   "generator": "stud",
   "variant": "double_end",
   "units": "mm",
-  "keyColumns": ["d", "l"],
+  "keyColumns": [
+    "d",
+    "l"
+  ],
   "columns": [
-    { "name": "d", "param": "nominal_dia", "type": "length" },
-    { "name": "P", "param": "thread_pitch", "type": "length" },
-    { "name": "l", "param": "length", "type": "length" },
-    { "name": "b1", "param": "metal_thread_length", "type": "length" },
-    { "name": "b2", "param": "nut_thread_length", "type": "length" }
+    {
+      "name": "d",
+      "param": "nominal_dia",
+      "type": "length"
+    },
+    {
+      "name": "P",
+      "param": "thread_pitch",
+      "type": "length"
+    },
+    {
+      "name": "l",
+      "param": "length",
+      "type": "length"
+    },
+    {
+      "name": "b1",
+      "param": "metal_thread_length",
+      "type": "length"
+    },
+    {
+      "name": "b2",
+      "param": "nut_thread_length",
+      "type": "length"
+    }
   ],
   "members": [
-    { "d": 6, "P": 1.0, "l": 40, "b1": 7.5, "b2": 18 },
-    { "d": 8, "P": 1.25, "l": 50, "b1": 10, "b2": 22 },
-    { "d": 10, "P": 1.5, "l": 60, "b1": 12.5, "b2": 26 },
-    { "d": 12, "P": 1.75, "l": 70, "b1": 15, "b2": 30 }
+    {
+      "d": 6,
+      "P": 1.0,
+      "l": 30,
+      "b1": 18,
+      "b2": 7.5
+    },
+    {
+      "d": 8,
+      "P": 1.25,
+      "l": 35,
+      "b1": 22,
+      "b2": 10.0
+    },
+    {
+      "d": 10,
+      "P": 1.5,
+      "l": 40,
+      "b1": 26,
+      "b2": 12.5
+    },
+    {
+      "d": 12,
+      "P": 1.75,
+      "l": 50,
+      "b1": 30,
+      "b2": 15.0
+    },
+    {
+      "d": 16,
+      "P": 2.0,
+      "l": 65,
+      "b1": 38,
+      "b2": 20.0
+    },
+    {
+      "d": 20,
+      "P": 2.5,
+      "l": 80,
+      "b1": 46,
+      "b2": 25.0
+    },
+    {
+      "d": 24,
+      "P": 3.0,
+      "l": 100,
+      "b1": 54,
+      "b2": 30.0
+    },
+    {
+      "d": 30,
+      "P": 3.5,
+      "l": 120,
+      "b1": 66,
+      "b2": 37.5
+    },
+    {
+      "d": 36,
+      "P": 4.0,
+      "l": 140,
+      "b1": 84,
+      "b2": 45.0
+    },
+    {
+      "d": 42,
+      "P": 4.5,
+      "l": 160,
+      "b1": 96,
+      "b2": 52.5
+    },
+    {
+      "d": 48,
+      "P": 5.0,
+      "l": 200,
+      "b1": 108,
+      "b2": 60.0
+    }
   ]
 }

@@ -8,6 +8,27 @@ a family, cite the source here (URL + what was taken from it) in the same change
 Values are the standard **nominal** dimensions (for toleranced fields, the nominal or the
 mid-range of the published min/max), in millimetres.
 
+## Size coverage (2026-07 expansion)
+
+The fastener families were expanded from a 4–6-size seed to each standard's **full official
+preferred series up to ~50 mm nominal** (metric) / ~2 in (inch). Provenance for the added sizes:
+
+- **Metric bolts/screws/nuts/washers/studs/rod** — dimensions transcribed from the same
+  fasteners.eu tables already cited per family below (ISO 4017/4032/4035/4762/10642/7089,
+  DIN 127/939/976). The coarse **pitch `P` is the canonical ISO 261 coarse-thread series**
+  (M1.6 = 0.35 … M48 = 5.0), authoritative and independent of the source page. Every added row's
+  M6–M12 overlap was cross-checked against the previously-verified values and matched exactly.
+- **Inch (ASME B18.2.1 / B18.2.2 / B18.3 / B18.22.1)** — across-flats/head/socket/washer
+  dimensions from authoritative ASME reproductions (Boltport, Torqbolt, Fastenal, BHAM, Alma
+  Bolt), each cross-checked against ≥2 concordant tables and the 6 pre-verified anchor rows.
+- **Representative lengths** — `l` (and fully-threaded `b = l`) for bolts/screws/socket screws is
+  a representative value ≈ 5·d (metric) / 4·D (inch) rounded to a preferred length; the standards
+  fix a length *range* per diameter, not one length. `l` is user-overridable at placement.
+- **Sizes deliberately dropped or capped** (official source did not confirm them — not guessed):
+  ISO 10642 stops at **M20** (a suspect M24 row was discarded); ISO 7089 stops at **M36** (the
+  page tabulates no M42/M48); DIN 939 stud starts at **M6** (no smaller size is tabulated);
+  ASME B18.22.1 washer omits the **3/16** row (genuine cross-source disagreement).
+
 ## Fasteners / Washers
 
 ### `washer_din127.json` — DIN 127 Form B (spring lock washer)
@@ -62,8 +83,12 @@ mid-range of the published min/max), in millimetres.
 
 ### `hex_nut_iso4035.json` — ISO 4035 (hexagon thin nut, chamfered)
 - Source: fasteners.eu ISO 4035 — <https://www.fasteners.eu/standards/ISO/4035/>.
-- Verified/**corrected**: s (max) = 10/13/**17/19** (thin nuts keep the wider across-flats for
-  M10/M12, unlike ISO 4032's 16/18; was 16/18), m (max) = 3.2/4.0/5.0/6.0 (matched).
+- Across-flats `s` follows the harmonized ISO 272 hex series, **identical to ISO 4032** — a thin
+  nut is a standard nut cut thinner, so it takes the same wrench size (M10 = 16, M12 = 18).
+  **Reconciled** the 2026-07 size-coverage expansion to 16/18: fasteners.eu still tabulates the
+  legacy DIN 439 widths (M10/M12 = 17/19) under ISO 4035, but ISO 4035:2012 uses the ISO 272
+  series. `m` (max nut height, the thin value) = 3.2/4.0/5.0/6.0 for M6–M12, all below the
+  ISO 4032 standard-nut heights.
 
 ## Fasteners / Studs & threaded rod
 

@@ -68,11 +68,14 @@ func TestWasherTextSizeColumn(t *testing.T) {
 	}
 	fam := mustFamily(t, e)
 	rows := tableRows(fam)
-	if len(rows) == 0 || rows[0].Cells[0] != "M6" {
-		t.Errorf("first washer row = %+v, want size cell M6", rows)
+	// Sizes render as nominal "M…" designations, not numeric labels. The table spans the full
+	// preferred series, so assert the designation format plus that both M6 and M12 rows exist
+	// (rather than pinning the first row, which is now the smallest size M1.6).
+	if len(rows) == 0 || !strings.HasPrefix(rows[0].Cells[0], "M") {
+		t.Errorf("first washer row = %+v, want an \"M…\" size designation", rows)
 	}
-	if !anyRowCellEquals(rows, "M12") {
-		t.Errorf("washer table rows = %+v, want a M12 row", rows)
+	if !anyRowCellEquals(rows, "M6") || !anyRowCellEquals(rows, "M12") {
+		t.Errorf("washer table rows = %+v, want both M6 and M12 rows", rows)
 	}
 }
 
@@ -178,8 +181,9 @@ func TestSelectFamilyAndCategory(t *testing.T) {
 	if e.sel.familyID != "iso4017-hex-bolt" {
 		t.Errorf("family after tree select = %q, want iso4017-hex-bolt", e.sel.familyID)
 	}
-	if e.sel.memberKey != "d=6,l=30" {
-		t.Errorf("member after family switch = %q, want the first size d=6,l=30", e.sel.memberKey)
+	// Re-picks the family's first (smallest) size, now M1.6 at the head of the preferred series.
+	if e.sel.memberKey != "d=1.6,l=8" {
+		t.Errorf("member after family switch = %q, want the first size d=1.6,l=8", e.sel.memberKey)
 	}
 
 	// An unknown category clears the family list.
