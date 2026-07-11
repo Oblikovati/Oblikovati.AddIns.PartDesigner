@@ -259,13 +259,18 @@ the inch designation instead of a metric d/P pair.
 
 ### `upn_en10279.json` — EN 10279 (hot-rolled taper-flange channels, UPN)
 - Section dimensions h, b, tw, tf are the nominal values tabulated in EN 10279:2000 for the UPN
-  series (e.g. UPN 200 = 200/75/8.5/11.5, where tf is the standard reference flange thickness). A
-  representative subset (UPN 80/100/160/200) is included.
-- **Inner-flange taper is 8 %** (≈4.57°, DIN 1026-1 / EN 10279 — cross-checked against amesweb,
-  steelstd.com and montanstahl UPN datasheets; an earlier note of "~5 %" was wrong). The root
-  radius r1 equals the flange thickness tf and the toe radius r2 ≈ tf/2 (r2 = 4/4.5/5.5/6 mm for
-  UPN 80/100/160/200 per amesweb). The section is symmetric about its X axis with the web on the
-  left; overall height, flange reach, web and (reference) flange thickness are exact.
+  series (e.g. UPN 200 = 200/75/8.5/11.5, where tf is the standard reference flange thickness); the
+  full UPN 50–400 series is included.
+- **Fully modelled** (taper + fillets, `channel_taper` generator): the **8 % inner-flange taper**
+  (≈4.57°, DIN 1026-1 / EN 10279 — cross-checked against amesweb, steelstd.com and montanstahl UPN
+  datasheets; an earlier note of "~5 %" was wrong), the **root fillet r1 = tf** and the **toe
+  fillet r2 = tf/2** (the EN convention — the amesweb tabulated 4/4.5/5.5/6 mm for UPN 80/100/160/200
+  are tf/2 to rounding; both radii are derived from tf, no per-size radius column). The section is
+  symmetric about its X axis, web on the left. The DIN 1026 line at which tf is measured is not
+  published, so the reference is fixed toe-ward of mid-overhang (`taperRefFrac`) by calibrating the
+  extruded cross-section area to the tabulated EN 10279 A — matched to **<0.5 % across UPN 80…200**
+  (verified live, `livetest/verify_upn.py`). Height, flange reach, web thickness and the fillet
+  radii are exact.
 - Length is a representative stock length (6000 mm), user-overridable.
 
 ### `angle_equal_en10056.json`, `angle_unequal_en10056.json` — EN 10056 (hot-rolled angles, L)

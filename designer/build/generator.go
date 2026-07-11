@@ -75,7 +75,7 @@ func (r *Registry) Kinds() []string {
 // builtinGenerators is every generator the DefaultRegistry registers, grouped by category PBI
 // (structural, shaft parts, fasteners, bearings). New part types append here as they land.
 var builtinGenerators = []PartGenerator{
-	RoundBar{}, FlatBar{}, IBeam{}, Channel{}, Angle{}, Tee{}, HollowRect{}, HollowRound{},
+	RoundBar{}, FlatBar{}, IBeam{}, Channel{}, TaperedChannel{}, Angle{}, Tee{}, HollowRect{}, HollowRound{},
 	Key{}, GibHeadKey{}, Pin{}, ClevisPin{}, SplitPin{}, Circlip{},
 	HexBolt{}, SocketScrew{}, HexNut{}, Washer{}, Stud{},
 	BallBearing{}, RollerBearing{}, ThrustBearing{}, ThrustSelfAligning{}, TaperedRoller{}, AngularContact{}, PlainBush{},

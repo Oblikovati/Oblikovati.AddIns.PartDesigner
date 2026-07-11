@@ -20,3 +20,24 @@ func (Channel) Build(b *PartBuilder, rm ResolvedMember) error {
 		return sk.GroundedChannelSection("height", "flange_width", "web_thickness", "flange_thickness")
 	})
 }
+
+// TaperedChannel generates a taper-flange channel (UPN per DIN 1026-1 / EN 10279, AISC C): the
+// inner flange faces slope inward at `flange_taper` (an angle) so the flange is thicker at the web
+// than the toe. It shares the section parameters with Channel plus `flange_taper`, and extrudes to
+// `length` (#69).
+type TaperedChannel struct{}
+
+// Kind is the family `generator` binding for taper-flange channels.
+func (TaperedChannel) Kind() string { return "channel_taper" }
+
+// Build publishes the member's parameters and extrudes its taper-flange channel section to
+// `length`. It expects `height`, `flange_width`, `web_thickness`, `flange_thickness`,
+// `flange_taper`, and `length`.
+func (TaperedChannel) Build(b *PartBuilder, rm ResolvedMember) error {
+	seeds := taperedChannelSeeds(rm)
+	return profileExtrude(b, rm, func(sk *SketchContext) error {
+		// r1 (root fillet) = tf and r2 (toe fillet) = tf/2 per the EN 10279 fillet convention.
+		return sk.GroundedTaperedChannelSection(seeds, "height", "flange_width", "web_thickness",
+			"flange_thickness", "flange_taper", "flange_thickness", "(flange_thickness) / 2")
+	})
+}

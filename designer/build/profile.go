@@ -42,6 +42,7 @@ func extrudeProfile(b *PartBuilder, drawProfile func(*SketchContext) error, oper
 	if err := drawProfile(sk); err != nil {
 		return err
 	}
+	sk.DumpGeometry("profile") // dev-only (OBK_PD_DEBUG); traces DOF + coords before the DOF-0 gate
 	if err := sk.AssertFullyConstrained(); err != nil {
 		return err
 	}

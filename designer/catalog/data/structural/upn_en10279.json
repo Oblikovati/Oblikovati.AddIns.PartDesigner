@@ -2,7 +2,7 @@
   "id": "upn-en10279",
   "category": "Structural/Channels/UPN",
   "standard": "EN 10279",
-  "generator": "channel",
+  "generator": "channel_taper",
   "units": "mm",
   "keyColumns": ["designation"],
   "columns": [
@@ -11,152 +11,27 @@
     { "name": "b", "param": "flange_width", "type": "length" },
     { "name": "tw", "param": "web_thickness", "type": "length" },
     { "name": "tf", "param": "flange_thickness", "type": "length" },
+    { "name": "taper", "param": "flange_taper", "type": "angle" },
     { "name": "l", "param": "length", "type": "length" }
   ],
   "members": [
-    {
-      "designation": "UPN 50",
-      "h": 50,
-      "b": 38,
-      "tw": 5.0,
-      "tf": 7.0,
-      "l": 6000
-    },
-    {
-      "designation": "UPN 65",
-      "h": 65,
-      "b": 42,
-      "tw": 5.5,
-      "tf": 7.5,
-      "l": 6000
-    },
-    {
-      "designation": "UPN 80",
-      "h": 80,
-      "b": 45,
-      "tw": 6.0,
-      "tf": 8.0,
-      "l": 6000
-    },
-    {
-      "designation": "UPN 100",
-      "h": 100,
-      "b": 50,
-      "tw": 6.0,
-      "tf": 8.5,
-      "l": 6000
-    },
-    {
-      "designation": "UPN 120",
-      "h": 120,
-      "b": 55,
-      "tw": 7.0,
-      "tf": 9.0,
-      "l": 6000
-    },
-    {
-      "designation": "UPN 140",
-      "h": 140,
-      "b": 60,
-      "tw": 7.0,
-      "tf": 10.0,
-      "l": 6000
-    },
-    {
-      "designation": "UPN 160",
-      "h": 160,
-      "b": 65,
-      "tw": 7.5,
-      "tf": 10.5,
-      "l": 6000
-    },
-    {
-      "designation": "UPN 180",
-      "h": 180,
-      "b": 70,
-      "tw": 8.0,
-      "tf": 11.0,
-      "l": 6000
-    },
-    {
-      "designation": "UPN 200",
-      "h": 200,
-      "b": 75,
-      "tw": 8.5,
-      "tf": 11.5,
-      "l": 6000
-    },
-    {
-      "designation": "UPN 220",
-      "h": 220,
-      "b": 80,
-      "tw": 9.0,
-      "tf": 12.5,
-      "l": 6000
-    },
-    {
-      "designation": "UPN 240",
-      "h": 240,
-      "b": 85,
-      "tw": 9.5,
-      "tf": 13.0,
-      "l": 6000
-    },
-    {
-      "designation": "UPN 260",
-      "h": 260,
-      "b": 90,
-      "tw": 10.0,
-      "tf": 14.0,
-      "l": 6000
-    },
-    {
-      "designation": "UPN 280",
-      "h": 280,
-      "b": 95,
-      "tw": 10.0,
-      "tf": 15.0,
-      "l": 6000
-    },
-    {
-      "designation": "UPN 300",
-      "h": 300,
-      "b": 100,
-      "tw": 10.0,
-      "tf": 16.0,
-      "l": 6000
-    },
-    {
-      "designation": "UPN 320",
-      "h": 320,
-      "b": 100,
-      "tw": 14.0,
-      "tf": 17.5,
-      "l": 6000
-    },
-    {
-      "designation": "UPN 350",
-      "h": 350,
-      "b": 100,
-      "tw": 14.0,
-      "tf": 16.0,
-      "l": 6000
-    },
-    {
-      "designation": "UPN 380",
-      "h": 380,
-      "b": 102,
-      "tw": 13.5,
-      "tf": 16.0,
-      "l": 6000
-    },
-    {
-      "designation": "UPN 400",
-      "h": 400,
-      "b": 110,
-      "tw": 14.0,
-      "tf": 18.0,
-      "l": 6000
-    }
+    { "designation": "UPN 50", "h": 50, "b": 38, "tw": 5.0, "tf": 7.0, "taper": 4.5739, "l": 6000 },
+    { "designation": "UPN 65", "h": 65, "b": 42, "tw": 5.5, "tf": 7.5, "taper": 4.5739, "l": 6000 },
+    { "designation": "UPN 80", "h": 80, "b": 45, "tw": 6.0, "tf": 8.0, "taper": 4.5739, "l": 6000 },
+    { "designation": "UPN 100", "h": 100, "b": 50, "tw": 6.0, "tf": 8.5, "taper": 4.5739, "l": 6000 },
+    { "designation": "UPN 120", "h": 120, "b": 55, "tw": 7.0, "tf": 9.0, "taper": 4.5739, "l": 6000 },
+    { "designation": "UPN 140", "h": 140, "b": 60, "tw": 7.0, "tf": 10.0, "taper": 4.5739, "l": 6000 },
+    { "designation": "UPN 160", "h": 160, "b": 65, "tw": 7.5, "tf": 10.5, "taper": 4.5739, "l": 6000 },
+    { "designation": "UPN 180", "h": 180, "b": 70, "tw": 8.0, "tf": 11.0, "taper": 4.5739, "l": 6000 },
+    { "designation": "UPN 200", "h": 200, "b": 75, "tw": 8.5, "tf": 11.5, "taper": 4.5739, "l": 6000 },
+    { "designation": "UPN 220", "h": 220, "b": 80, "tw": 9.0, "tf": 12.5, "taper": 4.5739, "l": 6000 },
+    { "designation": "UPN 240", "h": 240, "b": 85, "tw": 9.5, "tf": 13.0, "taper": 4.5739, "l": 6000 },
+    { "designation": "UPN 260", "h": 260, "b": 90, "tw": 10.0, "tf": 14.0, "taper": 4.5739, "l": 6000 },
+    { "designation": "UPN 280", "h": 280, "b": 95, "tw": 10.0, "tf": 15.0, "taper": 4.5739, "l": 6000 },
+    { "designation": "UPN 300", "h": 300, "b": 100, "tw": 10.0, "tf": 16.0, "taper": 4.5739, "l": 6000 },
+    { "designation": "UPN 320", "h": 320, "b": 100, "tw": 14.0, "tf": 17.5, "taper": 4.5739, "l": 6000 },
+    { "designation": "UPN 350", "h": 350, "b": 100, "tw": 14.0, "tf": 16.0, "taper": 4.5739, "l": 6000 },
+    { "designation": "UPN 380", "h": 380, "b": 102, "tw": 13.5, "tf": 16.0, "taper": 4.5739, "l": 6000 },
+    { "designation": "UPN 400", "h": 400, "b": 110, "tw": 14.0, "tf": 18.0, "taper": 4.5739, "l": 6000 }
   ]
 }
