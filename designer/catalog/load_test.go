@@ -31,8 +31,9 @@ func TestLoadEmbeddedCatalog(t *testing.T) {
 	if got := bolt.Category.String(); got != "Fasteners/Bolts/Hex Head" {
 		t.Errorf("category = %q, want Fasteners/Bolts/Hex Head", got)
 	}
-	if len(bolt.Members) != 4 {
-		t.Fatalf("bolt members = %d, want 4", len(bolt.Members))
+	// ISO 4017 / DIN 933 carries the full preferred metric series M1.6–M48 (17 sizes).
+	if len(bolt.Members) < 17 {
+		t.Fatalf("bolt members = %d, want the full preferred series (>=17, M1.6–M48)", len(bolt.Members))
 	}
 }
 
@@ -45,13 +46,11 @@ func TestMemberRoundTrip(t *testing.T) {
 	}
 	bolt, _ := c.Family("iso4017-hex-bolt")
 
-	m := bolt.Members[1] // M8×40
-	if m.Key != "d=8,l=40" {
-		t.Fatalf("member key = %q, want d=8,l=40", m.Key)
-	}
-	got, ok := bolt.Member(m.Key)
+	// Resolve M8×40 by its canonical key (robust to the member count/order as the table grows).
+	const key = "d=8,l=40"
+	got, ok := bolt.Member(key)
 	if !ok {
-		t.Fatalf("Member(%q) not found", m.Key)
+		t.Fatalf("Member(%q) not found", key)
 	}
 	for _, want := range []struct {
 		col string
