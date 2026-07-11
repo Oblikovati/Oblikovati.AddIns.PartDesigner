@@ -2,6 +2,8 @@
 
 package build
 
+import "oblikovati.org/part-designer/designer/catalog"
+
 // splitGapAngle is the arc a retaining ring is revolved through: just under a full turn, so the
 // missing wedge is the split gap the ring is sprung open at. It is a representational gap, not a
 // per-size standard dimension (like the spring washer's sub-one-turn coil).
@@ -16,6 +18,7 @@ const (
 	earHoleFrac        = "0.45" // plier-hole Ø as a fraction of the eye Ø (leaves a real rim)
 	earOutwardFrac     = "0.3"  // eye centre this fraction of its own Ø past the band edge (60% overlap)
 	earMinClr          = 0.3    // mm; rim floor + two-ear non-collision clearance (float, for the guard)
+	mmPerInch          = 25.4   // exact by definition (1 in = 25.4 mm)
 )
 
 // Circlip generates a retaining ring / circlip (DIN 471 external, DIN 472 internal) as a flat
@@ -87,6 +90,17 @@ func deriveCirclipEarParams(b *PartBuilder, external bool) error {
 	return nil
 }
 
+// earClearance scales the earMinClr mm floor into the family's own unit. rm.Value returns column
+// numbers in that unit (the loader does no mm conversion), so circlipEarsFit's float comparisons
+// must be against a clearance in the same unit — otherwise a bare mm constant checked against inch
+// magnitudes reads as ~25x too large and silently fails an inch family's fit guard (#61).
+func earClearance(rm ResolvedMember) float64 {
+	if rm.Family.Units == catalog.UnitsInch {
+		return earMinClr / mmPerInch
+	}
+	return earMinClr
+}
+
 // circlipEarsFit reports whether both lug ears fit: a positive eye rim, and the two ears (30° apart
 // on the eye-centre circle) not colliding — 2·R·sin15° ≥ eye_dia + clearance. Internal rings are
 // the binding case (smaller R). Mirrors the parametric formulas so the Go build decision matches.
@@ -106,8 +120,9 @@ func circlipEarsFit(rm ResolvedMember) bool {
 		r = di/2 - eye*0.3
 	}
 	const sin15 = 0.2588190451
-	rimOK := hole+2*earMinClr <= eye
-	noCollide := 2*r*sin15 >= eye+earMinClr
+	clr := earClearance(rm)
+	rimOK := hole+2*clr <= eye
+	noCollide := 2*r*sin15 >= eye+clr
 	posRadius := r-eye/2 > 0
 	return rimOK && noCollide && posRadius
 }

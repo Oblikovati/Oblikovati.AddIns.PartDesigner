@@ -10,17 +10,19 @@ import (
 )
 
 // circlipMember builds a synthetic resolved retaining-ring member: nominal, ring bore/outer, s.
-// It carries no Category (neither External nor Internal), which is fine for the plain-ring tests
-// below since those don't touch the ear branch.
+// It carries no Category (neither External nor Internal). circlipIsExternal treats a nil category
+// as external, so for a normal-size member the guard still passes and deriveCirclipEarParams runs
+// — the plain-ring assertions below simply don't check the extra ear params it publishes.
 func circlipMember(nominal, innerDia, outerDia, thickness float64) ResolvedMember {
-	return circlipMemberWithCategory(nominal, innerDia, outerDia, thickness, nil)
+	return circlipMemberWithCategory(nominal, innerDia, outerDia, thickness, nil, catalog.UnitsMillimetre)
 }
 
 // circlipMemberWithCategory is circlipMember plus an explicit family Category, the signal
-// circlipIsExternal/circlipEarsFit key the external-vs-internal branch off.
-func circlipMemberWithCategory(nominal, innerDia, outerDia, thickness float64, category catalog.CategoryPath) ResolvedMember {
+// circlipIsExternal/circlipEarsFit key the external-vs-internal branch off, and an explicit
+// family Units (mm/in) — circlipEarsFit's clearance floor must scale with it (#61 fix pass).
+func circlipMemberWithCategory(nominal, innerDia, outerDia, thickness float64, category catalog.CategoryPath, units catalog.Units) ResolvedMember {
 	fam := &catalog.Family{
-		ID: "t-circlip", Generator: "circlip", Units: catalog.UnitsMillimetre,
+		ID: "t-circlip", Generator: "circlip", Units: units,
 		Category:   category,
 		KeyColumns: []string{"d"},
 		Columns: []catalog.Column{
@@ -42,7 +44,17 @@ func circlipMemberWithCategory(nominal, innerDia, outerDia, thickness float64, c
 // diameter first, the larger free outer diameter second.
 func circlipExtMember(key string, nominal, innerDia, outerDia, thickness float64) ResolvedMember {
 	rm := circlipMemberWithCategory(nominal, innerDia, outerDia, thickness,
-		catalog.CategoryPath{"Shaft Parts", "Retaining Rings", "External"})
+		catalog.CategoryPath{"Shaft Parts", "Retaining Rings", "External"}, catalog.UnitsMillimetre)
+	rm.Family.Members[0].Key = key
+	return rm
+}
+
+// circlipExtMemberInch is circlipExtMember but for an inch-unit family (Family.Units = "in"),
+// matching designer/catalog/data/shaft/circlip_ansi_external.json ("units": "in"). di/do are raw
+// inch column values, exactly as the loader hands them to a generator (no mm conversion, #61).
+func circlipExtMemberInch(key string, nominal, innerDia, outerDia, thickness float64) ResolvedMember {
+	rm := circlipMemberWithCategory(nominal, innerDia, outerDia, thickness,
+		catalog.CategoryPath{"Shaft Parts", "Retaining Rings", "External"}, catalog.UnitsInch)
 	rm.Family.Members[0].Key = key
 	return rm
 }
@@ -54,7 +66,7 @@ func circlipExtMember(key string, nominal, innerDia, outerDia, thickness float64
 // helper the real catalogue values directly.
 func circlipIntMember(key string, nominal, outerDia, innerDia, thickness float64) ResolvedMember {
 	rm := circlipMemberWithCategory(nominal, innerDia, outerDia, thickness,
-		catalog.CategoryPath{"Shaft Parts", "Retaining Rings", "Internal"})
+		catalog.CategoryPath{"Shaft Parts", "Retaining Rings", "Internal"}, catalog.UnitsMillimetre)
 	rm.Family.Members[0].Key = key
 	return rm
 }
@@ -147,6 +159,24 @@ func TestCirclipEarsFit(t *testing.T) {
 	// Synthetic tiny internal: small bore + wide band → ears collide → skip.
 	if circlipEarsFit(circlipIntMember("x", 6, 9.0, 4.0, 1.0)) {
 		t.Error("ears must NOT fit a tiny internal ring; want skip-ears fallback")
+	}
+}
+
+// TestCirclipEarsFitInchFamily is the #61 fix-pass regression: circlipEarsFit's clearance floor
+// (earMinClr, a millimetre constant) must scale with the family's Units, not be compared bare
+// against inch magnitudes. ASME B18.27 1/4" external (circlip_ansi_external.json, "units": "in",
+// di=0.24, do=0.415 in) has a real ~2x rim margin and must pass; a DIN 471 d30 mm member must keep
+// passing (unchanged). Hand-verified (see task-1-fix-brief.md): clr=0.3/25.4≈0.01181,
+// band=eye=0.0875, hole=0.0394, r=0.2338 → rimOK 0.0630≤0.0875, noCollide 0.1210≥0.0993,
+// posRadius 0.19>0 → true. Before the fix (bare-mm earMinClr=0.3in), rimOK is
+// hole+2*0.3=0.639 <= eye=0.0875 → false, so this assertion is RED against the unfixed guard —
+// see task-1-report.md for the pre-fix run.
+func TestCirclipEarsFitInchFamily(t *testing.T) {
+	if !circlipEarsFit(circlipExtMemberInch("1/4", 0.25, 0.24, 0.415, 0.025)) {
+		t.Error("ears should fit ASME 1/4\" external (inch family, unit-aware clearance)")
+	}
+	if !circlipEarsFit(circlipExtMember("d30", 30, 28.6, 38.6, 1.5)) {
+		t.Error("ears should still fit DIN471 d30 (mm, regression unchanged)")
 	}
 }
 
