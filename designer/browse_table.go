@@ -4,21 +4,62 @@ package designer
 
 import (
 	"strconv"
+	"strings"
 
 	"oblikovati.org/api/wire"
 	"oblikovati.org/part-designer/designer/catalog"
 )
 
-// tableColumns is the family's column names in declared order (the member table's header).
+// tableColumns is the member table's header row: each column's human-readable name in declared
+// order (see columnHeader — the cryptic standards symbol "s" reads as "Across Flats").
 func tableColumns(fam *catalog.Family) []string {
 	if fam == nil {
 		return nil
 	}
-	names := make([]string, len(fam.Columns))
+	headers := make([]string, len(fam.Columns))
 	for i, col := range fam.Columns {
-		names[i] = col.Name
+		headers[i] = columnHeader(col)
 	}
-	return names
+	return headers
+}
+
+// headerAbbrevExpansions expands terse tokens in a column's param name to full words for the table
+// header, so a column reads "Outer Diameter" instead of "outer_dia". Only genuinely cryptic
+// abbreviations belong here — a token not listed is just title-cased.
+var headerAbbrevExpansions = map[string]string{
+	"dia":  "Diameter",
+	"dist": "Distance",
+}
+
+// columnHeader is the human-readable member-table header for a column: the descriptive Param name
+// (which the generator already carries, e.g. "across_flats", "head_height") turned into
+// "Across Flats" / "Head Height" — underscores to spaces, each word title-cased, known
+// abbreviations expanded. It falls back to the terse standards symbol Name only when a column has
+// no Param. This gives full-word headers in place of the cryptic single letters (d, s, k) WITHOUT
+// touching Name/Param, which key the member cells, lookup, and geometry-driving parameters.
+func columnHeader(col catalog.Column) string {
+	if col.Param == "" {
+		return col.Name
+	}
+	words := strings.Split(col.Param, "_")
+	for i, w := range words {
+		if full, ok := headerAbbrevExpansions[w]; ok {
+			words[i] = full
+			continue
+		}
+		words[i] = titleWord(w)
+	}
+	return strings.Join(words, " ")
+}
+
+// titleWord upper-cases the first byte of an ASCII param token ("flats" -> "Flats", "a" -> "A") and
+// leaves the rest untouched, so an already-cased or numeric token is preserved. Param tokens are
+// ASCII snake_case, so byte indexing is safe here (unlike the deprecated strings.Title).
+func titleWord(w string) string {
+	if w == "" {
+		return ""
+	}
+	return strings.ToUpper(w[:1]) + w[1:]
 }
 
 // tableRows is one PanelTable row per family member — the full family table. Key is the member's
