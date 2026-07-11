@@ -86,6 +86,35 @@ sections, flat bar), one produced thickness per size was taken and confirmed as 
 - **EN 10058 flat bar** (13; b 15–100 mm) — width × one preferred thickness from EN 10058 Table 1
   (10×4 / 12×4 dropped — the standard has no 4 mm thickness).
 
+### Bearings (2026-07)
+
+The ISO 15 / 104 / 355 and ISO 4379 families were topped up to their designation series for bore
+⌀ ≤ 50 mm (117 members total). Every **boundary dimension** (bore d, outside ⌀ D, width B / height
+H / assembled width T, contact angle) is transcribed verbatim from an official manufacturer/ISO
+table and dual-confirmed against a second source.
+
+- **The rolling-element count `Z` is representational, not sourced.** No bearing manufacturer
+  publishes a per-designation ball/roller count — confirmed across SKF, Schaeffler/medias, NTN,
+  NSK, and KINEX (their tables give d/D/B, load ratings, and pitch/element diameters, never the
+  count). `Z` only drives how many rolling elements are *drawn*; it does not affect fit. So `Z` for
+  each new size is a representational count: for the deep-groove ball series it is taken from NSK's
+  published "number of balls" per designation (the one tier-1 source that lists it); for every other
+  family it is interpolated from that family's own seed `Z` trend by bore (the NU3 cylindrical
+  series reuses the NU2 same-bore count). Seed `Z` values are kept unchanged.
+- **Deep-groove ball (ISO 15, 60/62/63)** — 33 sizes; d/D/B from NSK/ISK/FBJ, Z from NSK. The
+  sub-10 mm miniatures (623–629) were dropped: NSK doesn't list them and no ball count was findable.
+- **Angular-contact (72xx-B), cylindrical roller (NU2 + NU3), tapered (302xx/303xx)** — d/D/B/T and
+  contact angle verbatim from SKF/KINEX/PTI; the ISO 355 integer contact angle (302xx = 14°,
+  303xx = 12°) follows the seed convention.
+- **Thrust ball (511xx)** — filled the one missing bore-45 size (51109 = 45×65×14, SKF/PTI).
+- **Self-aligning thrust (532xx)** — **the seed dimensions were corrected.** The seed 53204/53208
+  carried the *flat 511xx* values (20×35×10 / 40×60×13); the real 532xx, which pairs the thrust
+  bearing with a sphered seat washer, is larger (53204 = 20×40×17, 53208 = 40×68×23, triple-
+  confirmed vs SKF/NSK distributors). The whole 53200–53210 series now uses the real 532xx
+  dimensions, and the live gate re-verifies the concave spherical seat still builds at both ends.
+- **Plain sleeve bush (ISO 4379)** — 17 bores (6–50 mm); D and L verbatim from ISO 4379:2018
+  Table 1 (Type C). No rolling elements, so no `Z`.
+
 ## Fasteners / Washers
 
 ### `washer_din127.json` — DIN 127 Form B (spring lock washer)
