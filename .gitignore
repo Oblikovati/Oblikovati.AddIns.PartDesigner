@@ -39,6 +39,9 @@ go.work.sum
 # .idea/
 # .vscode/
 
+# Local git worktrees used for isolated feature/fix branches.
+.worktrees/
+
 # Python bytecode from livetest scripts
 __pycache__/
 *.pyc
