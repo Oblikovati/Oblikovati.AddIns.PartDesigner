@@ -116,3 +116,25 @@ jobs:
         with:
           name: oblikovati-part-designer-${{ matrix.os }}
           path: build/oblikovati-part-designer.*
+
+  build-wasm:
+    runs-on: ubuntu-latest
+    env:
+      GOOS: js
+      GOARCH: wasm
+      CGO_ENABLED: "0"
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+          cache: false
+      - uses: ./.github/actions/siblings
+      - name: Build js-wasm add-in
+        run: |
+          mkdir -p build
+          go build -o build/oblikovati-part-designer.wasm .
+      - uses: actions/upload-artifact@v6
+        with:
+          name: oblikovati-part-designer-js-wasm
+          path: build/oblikovati-part-designer.wasm
